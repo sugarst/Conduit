@@ -38,6 +38,33 @@ var result = await dispatcher.SendAsync(new PingQuery(41));   // 41
 
 ## 使用指南
 
+### 调用链概览
+
+Conduit 的调用链如下。你的代码只接触最上层的 `ISender` / `IPublisher`，中间的调度、行为链和作用域隔离都藏在库内：
+
+```mermaid
+flowchart LR
+    A["SendAsync"] --> B["Dispatcher<br/>查冻结调度表"]
+    B --> C["Request Behavior 链<br/>由外到内"]
+    C --> D["Request Handler<br/>HandleAsync"]
+
+    P["PublishAsync"] --> B2["Dispatcher"]
+    B2 --> E["全部 Notification Handler<br/>多播 / 并发 scope 隔离"]
+
+    S["StreamAsync"] --> B3["Dispatcher"]
+    B3 --> F["Stream Behavior 链"]
+    F --> G["Stream Handler<br/>HandleStreamAsync"]
+```
+
+三条链路各自独立：请求走 Request Behavior 链，流走独立的 Stream Behavior 链，通知**不经过** Behavior，而是广播给全部 Handler。
+
+要点：
+
+- 调度表在**启动期**（Mode A 反射扫描）或**编译期**（Mode B 源生成器）构建，热路径只做一次 `FrozenDictionary` 查找，零反射、零 `MakeGenericType`。
+- Behavior 按注册顺序**由外到内**包住 Handler，链上调用 `next()` 是无参委托；请求与流的 Behavior 注册表互不混用。
+- 并发发布通知时，库为每个 Handler 建独立 scope，避免多个线程共用同一个 `DbContext`。
+- Behavior **只能**经 `AddConduit` 配置注册，注册表外的实现会在启动期 fail-fast。
+
 ### 前置条件与安装
 
 消费方项目必须是 **`net10.0`**（硬约束：本库只有单一 `net10.0` 资产，不支持 net8/net9/netframework）。
