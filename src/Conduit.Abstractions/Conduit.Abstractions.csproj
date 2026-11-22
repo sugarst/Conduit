@@ -1,0 +1,14 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <ConduitAotCompatible>true</ConduitAotCompatible>
+    <IsPackable>false</IsPackable>
+    <PackageId>Conduit.Abstractions</PackageId>
+    <Description>Behavior contracts: handlers, pipeline behaviors, notification publishers, processors, validation and facades.</Description>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="../Conduit.Contracts/Conduit.Contracts.csproj" />
+  </ItemGroup>
+
+</Project>
