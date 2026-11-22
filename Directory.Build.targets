@@ -1,0 +1,29 @@
+<Project>
+
+  <!--
+    AOT / 裁剪工具链版本对齐。
+
+    SDK 10.0.403 的 Microsoft.NETCoreSdk.BundledVersions.props 把 net10.0 的
+    KnownILCompilerPack / KnownILLinkPack 固定为 10.0.14，而运行时依赖已是 10.0.15
+    （Microsoft.Extensions.DependencyInjection[.Abstractions]）。
+
+    这里把 net10.0 的两项上移到 10.0.15，避免同一解决方案内 10.0.14 / 10.0.15 混用。
+    SDK 内置的 net6/7/8/9 清单不受影响（按 TargetFramework 元数据精确命中）。
+
+    必须在 target 内改写：顶层 ItemGroup 的 Condition 不允许引用 item metadata（MSB4191），
+    而隐式包引用由 ProcessFrameworkReferences / CollectPackageReferences 阶段生成，
+    因此用 BeforeTargets 钩在这两个阶段之前完成改写。
+  -->
+  <Target Name="_ConduitAlignAotToolchainVersions"
+          BeforeTargets="ProcessFrameworkReferences;CollectPackageReferences">
+    <ItemGroup>
+      <KnownILCompilerPack Update="Microsoft.DotNet.ILCompiler"
+                           Condition="'%(KnownILCompilerPack.TargetFramework)' == 'net10.0'"
+                           ILCompilerPackVersion="10.0.15" />
+      <KnownILLinkPack Update="Microsoft.NET.ILLink.Tasks"
+                       Condition="'%(KnownILLinkPack.TargetFramework)' == 'net10.0'"
+                       ILLinkPackVersion="10.0.15" />
+    </ItemGroup>
+  </Target>
+
+</Project>

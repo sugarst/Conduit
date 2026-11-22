@@ -1,0 +1,33 @@
+<Project>
+
+  <!--
+    集中包版本管理（CPM）。禁止在任何 .csproj 中书写版本号，禁止浮动版本。
+    版本核实日期：2026-11-22。
+  -->
+  <ItemGroup Label="运行时依赖（仅 DI 适配层需要，产品内核零依赖）">
+    <PackageVersion Include="Microsoft.Extensions.DependencyInjection.Abstractions" Version="10.0.15" />
+  </ItemGroup>
+
+  <ItemGroup Label="测试与开发工具">
+    <PackageVersion Include="TUnit" Version="1.87.12" />
+    <PackageVersion Include="TUnit.Mocks" Version="1.87.12" />
+    <PackageVersion Include="Microsoft.Extensions.DependencyInjection" Version="10.0.15" />
+    <PackageVersion Include="Microsoft.CodeAnalysis.CSharp" Version="5.0.0" />
+    <PackageVersion Include="BenchmarkDotNet" Version="0.15.8" />
+    <!--
+      PublicApiAnalyzers：版本已核实，但 PublicAPI.Shipped/Unshipped.txt 快照需要 IDE codefix 维护，
+      命令行无法生成。当前以 tests/Conduit.Tests/PublicApiSurfaceTests.cs（反射快照审批）落地同等门禁。
+    -->
+    <PackageVersion Include="Microsoft.CodeAnalysis.PublicApiAnalyzers" Version="5.6.0" />
+  </ItemGroup>
+
+  <ItemGroup Label="Microsoft.Testing.Platform 扩展（CI 报告与覆盖率）">
+    <PackageVersion Include="Microsoft.Testing.Extensions.TrxReport" Version="2.5.3" />
+    <PackageVersion Include="Microsoft.Testing.Extensions.CodeCoverage" Version="18.12.0" />
+  </ItemGroup>
+
+  <ItemGroup Label="可选适配包">
+    <PackageVersion Include="FluentValidation" Version="12.2.0" />
+  </ItemGroup>
+
+</Project>

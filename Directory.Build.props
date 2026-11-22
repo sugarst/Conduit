@@ -1,0 +1,50 @@
+<Project>
+
+  <!--
+    Conduit 统一构建契约（对应技术方案 §2.5.3 / §11）：
+      1. 全库唯一产品目标框架 net10.0，禁止多目标、禁止 netstandard/netframework。
+      2. 零第三方运行时依赖：产品项目不得引入任何 polyfill 包。
+      3. 警告即错误，避免"AOT 裁剪警告被忽略"这类慢性腐化。
+  -->
+
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+    <LangVersion>14.0</LangVersion>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
+    <AnalysisLevel>latest-recommended</AnalysisLevel>
+    <Deterministic>true</Deterministic>
+    <ContinuousIntegrationBuild Condition="'$(CI)' == 'true'">true</ContinuousIntegrationBuild>
+    <WarningsAsErrors>$(WarningsAsErrors);NU1903;NU1904</WarningsAsErrors>
+
+    <!-- 公开 API 一律写 XML 注释，但缺失注释不阻断构建 -->
+    <GenerateDocumentationFile>true</GenerateDocumentationFile>
+    <NoWarn>$(NoWarn);CS1591</NoWarn>
+
+    <ManagePackageVersionsCentrally>true</ManagePackageVersionsCentrally>
+    <CentralPackageTransitivePinningEnabled>true</CentralPackageTransitivePinningEnabled>
+
+    <Company>Conduit</Company>
+    <Authors>Conduit Contributors</Authors>
+    <Product>Conduit</Product>
+    <PackageLicenseExpression>Apache-2.0</PackageLicenseExpression>
+    <RepositoryType>git</RepositoryType>
+    <PackageRequireLicenseAcceptance>false</PackageRequireLicenseAcceptance>
+    <PackageTags>mediator;cqrs;dispatcher;pipeline;source-generator;aot</PackageTags>
+    <Version>1.0.0</Version>
+  </PropertyGroup>
+
+  <!-- 可打包项目默认不打包，由具体项目显式开启（IsPackable） -->
+  <PropertyGroup>
+    <IsPackable>false</IsPackable>
+    <IsTestProject>false</IsTestProject>
+  </PropertyGroup>
+
+  <PropertyGroup Condition="'$(ConduitAotCompatible)' == 'true'">
+    <IsAotCompatible>true</IsAotCompatible>
+    <EnableTrimAnalyzer>true</EnableTrimAnalyzer>
+    <EnableSingleFileAnalyzer>true</EnableSingleFileAnalyzer>
+  </PropertyGroup>
+
+</Project>

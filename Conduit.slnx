@@ -1,0 +1,22 @@
+<Solution>
+  <Folder Name="/benchmarks/">
+    <Project Path="benchmarks/Conduit.Benchmarks/Conduit.Benchmarks.csproj" />
+  </Folder>
+  <Folder Name="/samples/">
+    <Project Path="samples/Conduit.Samples/Conduit.Samples.csproj" />
+  </Folder>
+  <Folder Name="/src/">
+    <Project Path="src/Conduit.Abstractions/Conduit.Abstractions.csproj" />
+    <Project Path="src/Conduit.Contracts/Conduit.Contracts.csproj" />
+    <Project Path="src/Conduit.Core/Conduit.Core.csproj" />
+    <Project Path="src/Conduit.DependencyInjection/Conduit.DependencyInjection.csproj" />
+    <Project Path="src/Conduit.FluentValidation/Conduit.FluentValidation.csproj" />
+    <Project Path="src/Conduit.SourceGenerator/Conduit.SourceGenerator.csproj" />
+  </Folder>
+  <Folder Name="/tests/">
+    <Project Path="tests/Conduit.AotTests/Conduit.AotTests.csproj" />
+    <Project Path="tests/Conduit.GeneratorTests/Conduit.GeneratorTests.csproj" />
+    <Project Path="tests/Conduit.Tests/Conduit.Tests.csproj" />
+    <Project Path="tests/Conduit.TestSupport/Conduit.TestSupport.csproj" />
+  </Folder>
+</Solution>

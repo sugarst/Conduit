@@ -1,0 +1,45 @@
+root = true
+
+[*]
+charset = utf-8
+end_of_line = crlf
+insert_final_newline = true
+trim_trailing_whitespace = true
+indent_style = space
+indent_size = 4
+
+[*.{json,yml,yaml,xml,props,targets,csproj,editorconfig}]
+indent_size = 2
+
+[*.md]
+trim_trailing_whitespace = false
+
+[*.cs]
+dotnet_sort_system_directives_first = true
+csharp_style_namespace_declarations = file_scoped:warning
+csharp_using_directive_placement = outside_namespace:warning
+
+# —— 设计与实现规范：本库刻意采用的形态，关闭与之冲突的通用规则 ——
+dotnet_diagnostic.CA1000.severity = none   # 类型嵌套（Entry/Invoker 家族刻意嵌套）
+dotnet_diagnostic.CA1002.severity = none   # 不用 List<T> 暴露（内部热路径用数组）
+dotnet_diagnostic.CA1034.severity = none   # 嵌套类型可见性
+dotnet_diagnostic.CA1051.severity = none   # 公开字段
+dotnet_diagnostic.CA1062.severity = none   # 参数空检查（由 ThrowIfNull 局部覆盖）
+dotnet_diagnostic.CA1305.severity = none   # IFormatProvider（不涉及本地化输出）
+dotnet_diagnostic.CA1515.severity = none   # 类型应 internal（契约层必须 public）
+dotnet_diagnostic.CA1707.severity = none   # 下划线命名（测试方法名刻意为之）
+dotnet_diagnostic.CA1716.severity = none   # 标识符与关键字冲突（Sender/Publisher 为领域词）
+dotnet_diagnostic.CA1711.severity = none   # 类型名后缀（*Delegate 正是委托类型的规范命名）
+dotnet_diagnostic.CA1724.severity = none   # 命名空间与类型同名
+dotnet_diagnostic.CA1812.severity = none   # 未使用的内部类（源生成器/适配器）
+dotnet_diagnostic.CA1819.severity = none   # 数组属性
+dotnet_diagnostic.CA1852.severity = none   # 可 sealed
+dotnet_diagnostic.CA1859.severity = none   # 可改具体类型
+dotnet_diagnostic.CA1861.severity = none   # 常量数组实参
+dotnet_diagnostic.CA2007.severity = none   # ConfigureAwait（库内已显式使用）
+dotnet_diagnostic.CA2227.severity = none   # 集合属性只读
+dotnet_diagnostic.CA5394.severity = none   # 随机数（重试抖动刻意用非加密随机）
+dotnet_diagnostic.CA2254.severity = none   # 日志模板（本库不依赖日志抽象）
+dotnet_diagnostic.CA1848.severity = none   # LoggerMessage（同上）
+dotnet_diagnostic.IDE0005.severity = none
+dotnet_diagnostic.IDE0290.severity = none
