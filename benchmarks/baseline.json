@@ -1,0 +1,53 @@
+{
+  "schemaVersion": 1,
+  "description": "Conduit 调度热路径性能基线。由 BenchmarkDotNet ShortRun 在本机实测生成，用于 CI 回归门禁（止损条件：超出基线 2 倍即失败）。",
+  "generatedAt": "2026-11-22",
+  "environment": {
+    "runtime": ".NET 10.0.15",
+    "os": "Windows (ARM64)",
+    "configuration": "Release",
+    "job": "ShortRun",
+    "note": "跨机器绝对值不可比，门禁只用于同环境回归检测"
+  },
+  "acceptance": {
+    "reflectionCallsOnHotPath": 0,
+    "makeGenericTypeOnHotPath": 0,
+    "activatorCreateInstanceOnHotPath": 0,
+    "expressionCompilation": 0,
+    "dictionaryLookupsPerDispatch": 1,
+    "syncCompletionAllocationBytesExcludingHandlerAndBehaviors": 32,
+    "stopLossMultiplier": 2.0
+  },
+  "benchmarks": {
+    "Send_NoBehavior": {
+      "role": "baseline",
+      "meanNs": 177.2,
+      "allocatedBytesPerOperation": 232
+    },
+    "Send_SyncCompleted": {
+      "role": "sync-completion",
+      "meanNs": 172.5,
+      "allocatedBytesPerOperation": 232
+    },
+    "Send_ThreeBehaviors": {
+      "role": "pipeline-three-behaviors",
+      "meanNs": 249.7,
+      "allocatedBytesPerOperation": 664
+    },
+    "Publish_ThreeHandlers": {
+      "role": "notification-three-handlers",
+      "meanNs": 302.5,
+      "allocatedBytesPerOperation": 808
+    },
+    "Stream_100_Items": {
+      "role": "streaming-100-items",
+      "meanNs": 4713.0,
+      "allocatedBytesPerOperation": 656
+    },
+    "Send_ScopedDispatcher": {
+      "role": "scoped-dispatcher",
+      "meanNs": 165.5,
+      "allocatedBytesPerOperation": 232
+    }
+  }
+}

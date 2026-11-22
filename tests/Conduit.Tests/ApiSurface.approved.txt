@@ -1,0 +1,387 @@
+# Conduit.Contracts
+T Conduit.Contracts.IBaseRequest [interface]
+T Conduit.Contracts.INotification [interface]
+T Conduit.Contracts.IRequest [interface; implements:Conduit.Contracts.IBaseRequest]
+T Conduit.Contracts.IRequest`1 [interface; implements:Conduit.Contracts.IBaseRequest]
+T Conduit.Contracts.IStreamRequest`1 [interface]
+T Conduit.Contracts.Unit [sealed]
+  M Conduit.Contracts.Unit.CompareTo`0(Conduit.Contracts.Unit) -> System.Int32
+  M Conduit.Contracts.Unit.Equals`0(Conduit.Contracts.Unit) -> System.Boolean
+  M Conduit.Contracts.Unit.Equals`0(System.Object) -> System.Boolean
+  M Conduit.Contracts.Unit.GetHashCode`0() -> System.Int32
+  M Conduit.Contracts.Unit.ToString`0() -> System.String
+  P Conduit.Contracts.Unit.Task : System.Threading.Tasks.Task (get)
+  P Conduit.Contracts.Unit.Value : Conduit.Contracts.Unit& (get)
+
+# Conduit.Abstractions
+T Conduit.Abstractions.ConduitConfigurationException [sealed; base:Conduit.Abstractions.ConduitException]
+  C Conduit.Abstractions.ConduitConfigurationException(System.String)
+  C Conduit.Abstractions.ConduitConfigurationException(System.String, System.Exception)
+T Conduit.Abstractions.ConduitException [base:System.Exception]
+T Conduit.Abstractions.ConduitStartupValidationException [sealed; base:Conduit.Abstractions.ConduitException]
+  C Conduit.Abstractions.ConduitStartupValidationException(System.Collections.Generic.IReadOnlyList`1[System.String])
+  P Conduit.Abstractions.ConduitStartupValidationException.Failures : System.Collections.Generic.IReadOnlyList`1[System.String] (get)
+T Conduit.Abstractions.DuplicateHandlerException [sealed; base:Conduit.Abstractions.ConduitException]
+  C Conduit.Abstractions.DuplicateHandlerException(System.Type, System.Collections.Generic.IReadOnlyList`1[System.Type])
+  P Conduit.Abstractions.DuplicateHandlerException.Implementations : System.Collections.Generic.IReadOnlyList`1[System.Type] (get)
+  P Conduit.Abstractions.DuplicateHandlerException.ServiceType : System.Type (get)
+T Conduit.Abstractions.ExceptionActionStrategy [sealed]
+  F Conduit.Abstractions.ExceptionActionStrategy.value__ : System.Int32
+  F static Conduit.Abstractions.ExceptionActionStrategy.ApplyForAllExceptions : Conduit.Abstractions.ExceptionActionStrategy
+  F static Conduit.Abstractions.ExceptionActionStrategy.ApplyForUnhandledExceptions : Conduit.Abstractions.ExceptionActionStrategy
+T Conduit.Abstractions.ExceptionHandlingState [sealed]
+  F Conduit.Abstractions.ExceptionHandlingState.value__ : System.Int32
+  F static Conduit.Abstractions.ExceptionHandlingState.Handled : Conduit.Abstractions.ExceptionHandlingState
+  F static Conduit.Abstractions.ExceptionHandlingState.Unhandled : Conduit.Abstractions.ExceptionHandlingState
+T Conduit.Abstractions.ExceptionOutcome`1 [sealed]
+  C Conduit.Abstractions.ExceptionOutcome`1(Conduit.Abstractions.ExceptionHandlingState, TResponse)
+  M Conduit.Abstractions.ExceptionOutcome`1.Deconstruct`0(Conduit.Abstractions.ExceptionHandlingState&, TResponse&) -> System.Void
+  M Conduit.Abstractions.ExceptionOutcome`1.Equals`0(Conduit.Abstractions.ExceptionOutcome`1[TResponse]) -> System.Boolean
+  M Conduit.Abstractions.ExceptionOutcome`1.Equals`0(System.Object) -> System.Boolean
+  M Conduit.Abstractions.ExceptionOutcome`1.GetHashCode`0() -> System.Int32
+  M Conduit.Abstractions.ExceptionOutcome`1.ToString`0() -> System.String
+  M static Conduit.Abstractions.ExceptionOutcome`1.Handled`0(TResponse) -> Conduit.Abstractions.ExceptionOutcome`1[TResponse]
+  M static Conduit.Abstractions.ExceptionOutcome`1.Unhandled`0() -> Conduit.Abstractions.ExceptionOutcome`1[TResponse]
+  P Conduit.Abstractions.ExceptionOutcome`1.Response : TResponse (getset)
+  P Conduit.Abstractions.ExceptionOutcome`1.State : Conduit.Abstractions.ExceptionHandlingState (getset)
+T Conduit.Abstractions.HandlerNotFoundException [sealed; base:Conduit.Abstractions.ConduitException]
+  C Conduit.Abstractions.HandlerNotFoundException(System.Type)
+  P Conduit.Abstractions.HandlerNotFoundException.RequestType : System.Type (get)
+T Conduit.Abstractions.ICacheKeyProvider [interface]
+  M Conduit.Abstractions.ICacheKeyProvider.GetCacheKey`0() -> System.String
+T Conduit.Abstractions.ICacheable [interface]
+  P Conduit.Abstractions.ICacheable.CacheDuration : System.Nullable`1[System.TimeSpan] (get)
+T Conduit.Abstractions.ICommand [interface; implements:Conduit.Contracts.IBaseRequest+Conduit.Contracts.IRequest+Conduit.Contracts.IRequest`1[[Conduit.Contracts.Unit, Conduit.Contracts, Version=1.0.0.0, Culture=neutral, PublicKeyToken=null]]]
+T Conduit.Abstractions.IConcurrentNotificationPublisher [interface; implements:Conduit.Abstractions.INotificationPublisher]
+T Conduit.Abstractions.IDispatcher [interface; implements:Conduit.Abstractions.IPublisher+Conduit.Abstractions.ISender]
+T Conduit.Abstractions.IIdempotent [interface]
+  P Conduit.Abstractions.IIdempotent.IdempotencyKey : System.String (get)
+T Conduit.Abstractions.INotificationHandler`1 [interface]
+  M Conduit.Abstractions.INotificationHandler`1.HandleAsync`0(TNotification, System.Threading.CancellationToken) -> System.Threading.Tasks.ValueTask
+T Conduit.Abstractions.INotificationPublisher [interface]
+  M Conduit.Abstractions.INotificationPublisher.PublishAsync`0(System.Collections.Generic.IReadOnlyList`1[Conduit.Abstractions.NotificationHandlerExecutor], Conduit.Contracts.INotification, System.Threading.CancellationToken) -> System.Threading.Tasks.ValueTask
+T Conduit.Abstractions.IPipelineBehavior`2 [interface]
+  M Conduit.Abstractions.IPipelineBehavior`2.HandleAsync`0(TRequest, Conduit.Abstractions.RequestHandlerDelegate`1[TResponse], System.Threading.CancellationToken) -> System.Threading.Tasks.ValueTask`1[TResponse]
+T Conduit.Abstractions.IPublisher [interface]
+  M Conduit.Abstractions.IPublisher.PublishAsync`1(TNotification, System.Threading.CancellationToken) -> System.Threading.Tasks.ValueTask
+T Conduit.Abstractions.IQuery`1 [interface; implements:Conduit.Contracts.IBaseRequest+Conduit.Contracts.IRequest`1[TResponse]]
+T Conduit.Abstractions.IRequestCache [interface]
+  M Conduit.Abstractions.IRequestCache.SetAsync`0(System.String, System.Object, System.Nullable`1[System.TimeSpan], System.Threading.CancellationToken) -> System.Threading.Tasks.ValueTask
+  M Conduit.Abstractions.IRequestCache.TryAddAsync`0(System.String, System.Object, System.Nullable`1[System.TimeSpan], System.Threading.CancellationToken) -> System.Threading.Tasks.ValueTask`1[System.Boolean]
+  M Conduit.Abstractions.IRequestCache.TryGetAsync`0(System.String, System.Threading.CancellationToken) -> System.Threading.Tasks.ValueTask`1[System.ValueTuple`2[System.Boolean,System.Object]]
+T Conduit.Abstractions.IRequestExceptionAction`2 [interface]
+  M Conduit.Abstractions.IRequestExceptionAction`2.ExecuteAsync`0(TRequest, TException, System.Threading.CancellationToken) -> System.Threading.Tasks.ValueTask
+T Conduit.Abstractions.IRequestExceptionHandler`3 [interface]
+  M Conduit.Abstractions.IRequestExceptionHandler`3.HandleAsync`0(TRequest, TException, Conduit.Abstractions.ExceptionOutcome`1[TResponse], System.Threading.CancellationToken) -> System.Threading.Tasks.ValueTask`1[Conduit.Abstractions.ExceptionOutcome`1[TResponse]]
+T Conduit.Abstractions.IRequestHandler`2 [interface]
+  M Conduit.Abstractions.IRequestHandler`2.HandleAsync`0(TRequest, System.Threading.CancellationToken) -> System.Threading.Tasks.ValueTask`1[TResponse]
+T Conduit.Abstractions.IRequestPostProcessor`2 [interface]
+  M Conduit.Abstractions.IRequestPostProcessor`2.ProcessAsync`0(TRequest, TResponse, System.Threading.CancellationToken) -> System.Threading.Tasks.ValueTask
+T Conduit.Abstractions.IRequestPreProcessor`1 [interface]
+  M Conduit.Abstractions.IRequestPreProcessor`1.ProcessAsync`0(TRequest, System.Threading.CancellationToken) -> System.Threading.Tasks.ValueTask
+T Conduit.Abstractions.IRequestValidator`1 [interface]
+  M Conduit.Abstractions.IRequestValidator`1.ValidateAsync`0(TRequest, System.Threading.CancellationToken) -> System.Threading.Tasks.ValueTask`1[System.Collections.Generic.IReadOnlyList`1[Conduit.Abstractions.ValidationError]]
+T Conduit.Abstractions.IRetryable [interface]
+  P Conduit.Abstractions.IRetryable.Policy : Conduit.Abstractions.RetryPolicy (get)
+T Conduit.Abstractions.ISender [interface]
+  M Conduit.Abstractions.ISender.SendAsync`1(Conduit.Contracts.IRequest`1[TResponse], System.Threading.CancellationToken) -> System.Threading.Tasks.ValueTask`1[TResponse]
+  M Conduit.Abstractions.ISender.StreamAsync`1(Conduit.Contracts.IStreamRequest`1[TResponse], System.Threading.CancellationToken) -> System.Collections.Generic.IAsyncEnumerable`1[TResponse]
+T Conduit.Abstractions.IStreamPipelineBehavior`2 [interface]
+  M Conduit.Abstractions.IStreamPipelineBehavior`2.HandleStreamAsync`0(TRequest, Conduit.Abstractions.StreamHandlerDelegate`1[TResponse], System.Threading.CancellationToken) -> System.Collections.Generic.IAsyncEnumerable`1[TResponse]
+T Conduit.Abstractions.IStreamRequestHandler`2 [interface]
+  M Conduit.Abstractions.IStreamRequestHandler`2.HandleStreamAsync`0(TRequest, System.Threading.CancellationToken) -> System.Collections.Generic.IAsyncEnumerable`1[TResponse]
+T Conduit.Abstractions.ITimeoutRequest [interface]
+  P Conduit.Abstractions.ITimeoutRequest.Timeout : System.TimeSpan (get)
+T Conduit.Abstractions.ITransactionScope [interface]
+  M Conduit.Abstractions.ITransactionScope.CommitAsync`0(System.Threading.CancellationToken) -> System.Threading.Tasks.ValueTask
+  M Conduit.Abstractions.ITransactionScope.RollbackAsync`0(System.Threading.CancellationToken) -> System.Threading.Tasks.ValueTask
+T Conduit.Abstractions.ITransactionScopeFactory [interface]
+  M Conduit.Abstractions.ITransactionScopeFactory.BeginAsync`0(System.Threading.CancellationToken) -> System.Threading.Tasks.ValueTask`1[Conduit.Abstractions.ITransactionScope]
+T Conduit.Abstractions.ITransactionalRequest [interface]
+T Conduit.Abstractions.NotificationHandlerExecutor [sealed]
+  C Conduit.Abstractions.NotificationHandlerExecutor(System.Func`3[Conduit.Contracts.INotification,System.Threading.CancellationToken,System.Threading.Tasks.ValueTask])
+  M Conduit.Abstractions.NotificationHandlerExecutor.Deconstruct`0(System.Func`3[Conduit.Contracts.INotification,System.Threading.CancellationToken,System.Threading.Tasks.ValueTask]&) -> System.Void
+  M Conduit.Abstractions.NotificationHandlerExecutor.Equals`0(Conduit.Abstractions.NotificationHandlerExecutor) -> System.Boolean
+  M Conduit.Abstractions.NotificationHandlerExecutor.Equals`0(System.Object) -> System.Boolean
+  M Conduit.Abstractions.NotificationHandlerExecutor.GetHashCode`0() -> System.Int32
+  M Conduit.Abstractions.NotificationHandlerExecutor.ToString`0() -> System.String
+  P Conduit.Abstractions.NotificationHandlerExecutor.Handler : System.Func`3[Conduit.Contracts.INotification,System.Threading.CancellationToken,System.Threading.Tasks.ValueTask] (getset)
+T Conduit.Abstractions.RequestHandlerDelegate`1 [sealed; base:System.MulticastDelegate]
+  C Conduit.Abstractions.RequestHandlerDelegate`1(System.Object, System.IntPtr)
+  M Conduit.Abstractions.RequestHandlerDelegate`1.BeginInvoke`0(System.AsyncCallback, System.Object) -> System.IAsyncResult
+  M Conduit.Abstractions.RequestHandlerDelegate`1.EndInvoke`0(System.IAsyncResult) -> System.Threading.Tasks.ValueTask`1[TResponse]
+  M Conduit.Abstractions.RequestHandlerDelegate`1.Invoke`0() -> System.Threading.Tasks.ValueTask`1[TResponse]
+T Conduit.Abstractions.RequestValidationException [sealed; base:System.Exception]
+  C Conduit.Abstractions.RequestValidationException(System.Collections.Generic.IReadOnlyList`1[Conduit.Abstractions.ValidationError])
+  P Conduit.Abstractions.RequestValidationException.Errors : System.Collections.Generic.IReadOnlyList`1[Conduit.Abstractions.ValidationError] (get)
+T Conduit.Abstractions.ResponseTypeMismatchException [sealed; base:Conduit.Abstractions.ConduitException]
+  C Conduit.Abstractions.ResponseTypeMismatchException(System.Type, System.Type)
+  P Conduit.Abstractions.ResponseTypeMismatchException.ExpectedResponseType : System.Type (get)
+  P Conduit.Abstractions.ResponseTypeMismatchException.RequestType : System.Type (get)
+T Conduit.Abstractions.RetryPolicy [sealed]
+  C Conduit.Abstractions.RetryPolicy(System.Int32, System.TimeSpan, System.Nullable`1[System.TimeSpan], System.Boolean)
+  M Conduit.Abstractions.RetryPolicy.Deconstruct`0(System.Int32&, System.TimeSpan&, System.Nullable`1[System.TimeSpan]&, System.Boolean&) -> System.Void
+  M Conduit.Abstractions.RetryPolicy.Equals`0(Conduit.Abstractions.RetryPolicy) -> System.Boolean
+  M Conduit.Abstractions.RetryPolicy.Equals`0(System.Object) -> System.Boolean
+  M Conduit.Abstractions.RetryPolicy.GetHashCode`0() -> System.Int32
+  M Conduit.Abstractions.RetryPolicy.ToString`0() -> System.String
+  P Conduit.Abstractions.RetryPolicy.BaseDelay : System.TimeSpan (getset)
+  P Conduit.Abstractions.RetryPolicy.Default : Conduit.Abstractions.RetryPolicy (get)
+  P Conduit.Abstractions.RetryPolicy.MaxAttempts : System.Int32 (getset)
+  P Conduit.Abstractions.RetryPolicy.MaxDelay : System.Nullable`1[System.TimeSpan] (getset)
+  P Conduit.Abstractions.RetryPolicy.UseJitter : System.Boolean (getset)
+T Conduit.Abstractions.StreamHandlerDelegate`1 [sealed; base:System.MulticastDelegate]
+  C Conduit.Abstractions.StreamHandlerDelegate`1(System.Object, System.IntPtr)
+  M Conduit.Abstractions.StreamHandlerDelegate`1.BeginInvoke`0(System.AsyncCallback, System.Object) -> System.IAsyncResult
+  M Conduit.Abstractions.StreamHandlerDelegate`1.EndInvoke`0(System.IAsyncResult) -> System.Collections.Generic.IAsyncEnumerable`1[TResponse]
+  M Conduit.Abstractions.StreamHandlerDelegate`1.Invoke`0() -> System.Collections.Generic.IAsyncEnumerable`1[TResponse]
+T Conduit.Abstractions.ValidationError [sealed]
+  C Conduit.Abstractions.ValidationError(System.String, System.String, System.String)
+  M Conduit.Abstractions.ValidationError.Deconstruct`0(System.String&, System.String&, System.String&) -> System.Void
+  M Conduit.Abstractions.ValidationError.Equals`0(Conduit.Abstractions.ValidationError) -> System.Boolean
+  M Conduit.Abstractions.ValidationError.Equals`0(System.Object) -> System.Boolean
+  M Conduit.Abstractions.ValidationError.GetHashCode`0() -> System.Int32
+  M Conduit.Abstractions.ValidationError.ToString`0() -> System.String
+  P Conduit.Abstractions.ValidationError.ErrorCode : System.String (getset)
+  P Conduit.Abstractions.ValidationError.Identifier : System.String (getset)
+  P Conduit.Abstractions.ValidationError.Message : System.String (getset)
+
+# Conduit.Core
+T Conduit.Core.Behaviors.CachingBehavior`2 [sealed; implements:Conduit.Abstractions.IPipelineBehavior`2[TRequest,TResponse]]
+  C Conduit.Core.Behaviors.CachingBehavior`2(System.IServiceProvider)
+  M Conduit.Core.Behaviors.CachingBehavior`2.HandleAsync`0(TRequest, Conduit.Abstractions.RequestHandlerDelegate`1[TResponse], System.Threading.CancellationToken) -> System.Threading.Tasks.ValueTask`1[TResponse]
+  P Conduit.Core.Behaviors.CachingBehavior`2.DefaultTimeToLive : System.TimeSpan (getset)
+T Conduit.Core.Behaviors.ConduitDuplicateRequestException [sealed; base:Conduit.Abstractions.ConduitException]
+  C Conduit.Core.Behaviors.ConduitDuplicateRequestException(System.Type, System.String)
+  P Conduit.Core.Behaviors.ConduitDuplicateRequestException.IdempotencyKey : System.String (get)
+  P Conduit.Core.Behaviors.ConduitDuplicateRequestException.RequestType : System.Type (get)
+T Conduit.Core.Behaviors.IdempotencyBehavior`2 [sealed; implements:Conduit.Abstractions.IPipelineBehavior`2[TRequest,TResponse]]
+  C Conduit.Core.Behaviors.IdempotencyBehavior`2(System.IServiceProvider)
+  M Conduit.Core.Behaviors.IdempotencyBehavior`2.HandleAsync`0(TRequest, Conduit.Abstractions.RequestHandlerDelegate`1[TResponse], System.Threading.CancellationToken) -> System.Threading.Tasks.ValueTask`1[TResponse]
+  P Conduit.Core.Behaviors.IdempotencyBehavior`2.TimeToLive : System.TimeSpan (getset)
+T Conduit.Core.Behaviors.RequestCacheKey [static]
+  M static Conduit.Core.Behaviors.RequestCacheKey.For`1(TRequest) -> System.String
+T Conduit.Core.Behaviors.RetryBehavior`2 [sealed; implements:Conduit.Abstractions.IPipelineBehavior`2[TRequest,TResponse]]
+  C Conduit.Core.Behaviors.RetryBehavior`2()
+  M Conduit.Core.Behaviors.RetryBehavior`2.HandleAsync`0(TRequest, Conduit.Abstractions.RequestHandlerDelegate`1[TResponse], System.Threading.CancellationToken) -> System.Threading.Tasks.ValueTask`1[TResponse]
+T Conduit.Core.Behaviors.TelemetryBehavior`2 [sealed; implements:Conduit.Abstractions.IPipelineBehavior`2[TRequest,TResponse]]
+  C Conduit.Core.Behaviors.TelemetryBehavior`2()
+  M Conduit.Core.Behaviors.TelemetryBehavior`2.HandleAsync`0(TRequest, Conduit.Abstractions.RequestHandlerDelegate`1[TResponse], System.Threading.CancellationToken) -> System.Threading.Tasks.ValueTask`1[TResponse]
+T Conduit.Core.Behaviors.TimeoutBehavior`2 [sealed; implements:Conduit.Abstractions.IPipelineBehavior`2[TRequest,TResponse]]
+  C Conduit.Core.Behaviors.TimeoutBehavior`2()
+  M Conduit.Core.Behaviors.TimeoutBehavior`2.HandleAsync`0(TRequest, Conduit.Abstractions.RequestHandlerDelegate`1[TResponse], System.Threading.CancellationToken) -> System.Threading.Tasks.ValueTask`1[TResponse]
+T Conduit.Core.Behaviors.TransactionBehavior`2 [sealed; implements:Conduit.Abstractions.IPipelineBehavior`2[TRequest,TResponse]]
+  C Conduit.Core.Behaviors.TransactionBehavior`2(System.IServiceProvider)
+  M Conduit.Core.Behaviors.TransactionBehavior`2.HandleAsync`0(TRequest, Conduit.Abstractions.RequestHandlerDelegate`1[TResponse], System.Threading.CancellationToken) -> System.Threading.Tasks.ValueTask`1[TResponse]
+T Conduit.Core.Behaviors.ValidationBehavior`2 [sealed; implements:Conduit.Abstractions.IPipelineBehavior`2[TRequest,TResponse]]
+  C Conduit.Core.Behaviors.ValidationBehavior`2(System.Collections.Generic.IEnumerable`1[Conduit.Abstractions.IRequestValidator`1[TRequest]])
+  M Conduit.Core.Behaviors.ValidationBehavior`2.HandleAsync`0(TRequest, Conduit.Abstractions.RequestHandlerDelegate`1[TResponse], System.Threading.CancellationToken) -> System.Threading.Tasks.ValueTask`1[TResponse]
+T Conduit.Core.Caching.InMemoryRequestCache [sealed; implements:Conduit.Abstractions.IRequestCache]
+  C Conduit.Core.Caching.InMemoryRequestCache(System.TimeProvider)
+  M Conduit.Core.Caching.InMemoryRequestCache.SetAsync`0(System.String, System.Object, System.Nullable`1[System.TimeSpan], System.Threading.CancellationToken) -> System.Threading.Tasks.ValueTask
+  M Conduit.Core.Caching.InMemoryRequestCache.TryAddAsync`0(System.String, System.Object, System.Nullable`1[System.TimeSpan], System.Threading.CancellationToken) -> System.Threading.Tasks.ValueTask`1[System.Boolean]
+  M Conduit.Core.Caching.InMemoryRequestCache.TryGetAsync`0(System.String, System.Threading.CancellationToken) -> System.Threading.Tasks.ValueTask`1[System.ValueTuple`2[System.Boolean,System.Object]]
+  P Conduit.Core.Caching.InMemoryRequestCache.SweepInterval : System.TimeSpan (getset)
+T Conduit.Core.ConduitDiagnostics [static]
+  F static Conduit.Core.ConduitDiagnostics.ActivitySource : System.Diagnostics.ActivitySource
+  F static Conduit.Core.ConduitDiagnostics.FailureCount : System.Diagnostics.Metrics.Counter`1[System.Int64]
+  F static Conduit.Core.ConduitDiagnostics.Meter : System.Diagnostics.Metrics.Meter
+  F static Conduit.Core.ConduitDiagnostics.PublishCount : System.Diagnostics.Metrics.Counter`1[System.Int64]
+  F static Conduit.Core.ConduitDiagnostics.SendCount : System.Diagnostics.Metrics.Counter`1[System.Int64]
+  F static Conduit.Core.ConduitDiagnostics.SendDuration : System.Diagnostics.Metrics.Histogram`1[System.Double]
+  F static Conduit.Core.ConduitDiagnostics.SourceName : System.String
+T Conduit.Core.ConduitDispatcher [sealed; implements:Conduit.Abstractions.IDispatcher+Conduit.Abstractions.IPublisher+Conduit.Abstractions.ISender]
+  C Conduit.Core.ConduitDispatcher(Conduit.Core.Dispatch.DispatchTables, System.IServiceProvider, Conduit.Core.Dispatch.IRequestPreProcessorRunner, Conduit.Core.Dispatch.IRequestPostProcessorRunner)
+  M Conduit.Core.ConduitDispatcher.PublishAsync`1(TNotification, System.Threading.CancellationToken) -> System.Threading.Tasks.ValueTask
+  M Conduit.Core.ConduitDispatcher.SendAsync`1(Conduit.Contracts.IRequest`1[TResponse], System.Threading.CancellationToken) -> System.Threading.Tasks.ValueTask`1[TResponse]
+  M Conduit.Core.ConduitDispatcher.StreamAsync`1(Conduit.Contracts.IStreamRequest`1[TResponse], System.Threading.CancellationToken) -> System.Collections.Generic.IAsyncEnumerable`1[TResponse]
+T Conduit.Core.Dispatch.DispatchTableBuilder [sealed]
+  C Conduit.Core.Dispatch.DispatchTableBuilder()
+  M Conduit.Core.Dispatch.DispatchTableBuilder.AddStream`0(Conduit.Core.Dispatch.StreamHandlerEntry) -> System.Void
+  M Conduit.Core.Dispatch.DispatchTableBuilder.Add`0(Conduit.Core.Dispatch.RequestHandlerEntry) -> System.Void
+  M Conduit.Core.Dispatch.DispatchTableBuilder.Build`0() -> Conduit.Core.Dispatch.DispatchTables
+  P Conduit.Core.Dispatch.DispatchTableBuilder.RequestCount : System.Int32 (get)
+  P Conduit.Core.Dispatch.DispatchTableBuilder.StreamCount : System.Int32 (get)
+T Conduit.Core.Dispatch.DispatchTables [sealed]
+  C Conduit.Core.Dispatch.DispatchTables(System.Collections.Frozen.FrozenDictionary`2[System.Type,Conduit.Core.Dispatch.RequestHandlerEntry], System.Collections.Frozen.FrozenDictionary`2[System.Type,Conduit.Core.Dispatch.StreamHandlerEntry])
+  P Conduit.Core.Dispatch.DispatchTables.Empty : Conduit.Core.Dispatch.DispatchTables (get)
+  P Conduit.Core.Dispatch.DispatchTables.Requests : System.Collections.Frozen.FrozenDictionary`2[System.Type,Conduit.Core.Dispatch.RequestHandlerEntry] (get)
+  P Conduit.Core.Dispatch.DispatchTables.Streams : System.Collections.Frozen.FrozenDictionary`2[System.Type,Conduit.Core.Dispatch.StreamHandlerEntry] (get)
+T Conduit.Core.Dispatch.ExceptionActionInvoker`2 [sealed; implements:Conduit.Core.Dispatch.IExceptionActionInvoker+Conduit.Core.Dispatch.IExceptionInvoker]
+  C Conduit.Core.Dispatch.ExceptionActionInvoker`2()
+  M Conduit.Core.Dispatch.ExceptionActionInvoker`2.InvokeAsync`0(System.Object, System.Exception, System.IServiceProvider, System.Threading.CancellationToken) -> System.Threading.Tasks.ValueTask
+  P Conduit.Core.Dispatch.ExceptionActionInvoker`2.ExceptionType : System.Type (get)
+T Conduit.Core.Dispatch.ExceptionHandlerInvoker`3 [sealed; implements:Conduit.Core.Dispatch.IExceptionHandlerInvoker+Conduit.Core.Dispatch.IExceptionInvoker]
+  C Conduit.Core.Dispatch.ExceptionHandlerInvoker`3()
+  M Conduit.Core.Dispatch.ExceptionHandlerInvoker`3.InvokeAsync`0(System.Object, System.Exception, Conduit.Core.Dispatch.ExceptionOutcomeResult, System.IServiceProvider, System.Threading.CancellationToken) -> System.Threading.Tasks.ValueTask`1[Conduit.Core.Dispatch.ExceptionOutcomeResult]
+  P Conduit.Core.Dispatch.ExceptionHandlerInvoker`3.ExceptionType : System.Type (get)
+T Conduit.Core.Dispatch.ExceptionOutcomeResult [sealed]
+  C Conduit.Core.Dispatch.ExceptionOutcomeResult(System.Boolean, System.Object)
+  M Conduit.Core.Dispatch.ExceptionOutcomeResult.Deconstruct`0(System.Boolean&, System.Object&) -> System.Void
+  M Conduit.Core.Dispatch.ExceptionOutcomeResult.Equals`0(Conduit.Core.Dispatch.ExceptionOutcomeResult) -> System.Boolean
+  M Conduit.Core.Dispatch.ExceptionOutcomeResult.Equals`0(System.Object) -> System.Boolean
+  M Conduit.Core.Dispatch.ExceptionOutcomeResult.GetHashCode`0() -> System.Int32
+  M Conduit.Core.Dispatch.ExceptionOutcomeResult.ToString`0() -> System.String
+  P Conduit.Core.Dispatch.ExceptionOutcomeResult.Handled : System.Boolean (getset)
+  P Conduit.Core.Dispatch.ExceptionOutcomeResult.Response : System.Object (getset)
+T Conduit.Core.Dispatch.IExceptionActionInvoker [interface; implements:Conduit.Core.Dispatch.IExceptionInvoker]
+  M Conduit.Core.Dispatch.IExceptionActionInvoker.InvokeAsync`0(System.Object, System.Exception, System.IServiceProvider, System.Threading.CancellationToken) -> System.Threading.Tasks.ValueTask
+T Conduit.Core.Dispatch.IExceptionDispatcher`2 [interface]
+  M Conduit.Core.Dispatch.IExceptionDispatcher`2.DispatchAsync`0(TRequest, System.Exception, System.IServiceProvider, System.Threading.CancellationToken) -> System.Threading.Tasks.ValueTask`1[Conduit.Abstractions.ExceptionOutcome`1[TResponse]]
+T Conduit.Core.Dispatch.IExceptionHandlerInvoker [interface; implements:Conduit.Core.Dispatch.IExceptionInvoker]
+  M Conduit.Core.Dispatch.IExceptionHandlerInvoker.InvokeAsync`0(System.Object, System.Exception, Conduit.Core.Dispatch.ExceptionOutcomeResult, System.IServiceProvider, System.Threading.CancellationToken) -> System.Threading.Tasks.ValueTask`1[Conduit.Core.Dispatch.ExceptionOutcomeResult]
+T Conduit.Core.Dispatch.IExceptionInvoker [interface]
+  P Conduit.Core.Dispatch.IExceptionInvoker.ExceptionType : System.Type (get)
+T Conduit.Core.Dispatch.IProcessorInvoker [interface]
+  M Conduit.Core.Dispatch.IProcessorInvoker.InvokeAsync`0(System.Object, System.Object, System.IServiceProvider, System.Threading.CancellationToken) -> System.Threading.Tasks.ValueTask
+T Conduit.Core.Dispatch.IRequestPostProcessorRunner [interface]
+  M Conduit.Core.Dispatch.IRequestPostProcessorRunner.RunAsync`0(System.Object, System.Object, System.IServiceProvider, System.Threading.CancellationToken) -> System.Threading.Tasks.ValueTask
+T Conduit.Core.Dispatch.IRequestPreProcessorRunner [interface]
+  M Conduit.Core.Dispatch.IRequestPreProcessorRunner.RunAsync`0(System.Object, System.IServiceProvider, System.Threading.CancellationToken) -> System.Threading.Tasks.ValueTask
+T Conduit.Core.Dispatch.PostProcessorInvoker`2 [sealed; implements:Conduit.Core.Dispatch.IProcessorInvoker]
+  C Conduit.Core.Dispatch.PostProcessorInvoker`2()
+  M Conduit.Core.Dispatch.PostProcessorInvoker`2.InvokeAsync`0(System.Object, System.Object, System.IServiceProvider, System.Threading.CancellationToken) -> System.Threading.Tasks.ValueTask
+T Conduit.Core.Dispatch.PreProcessorInvoker`1 [sealed; implements:Conduit.Core.Dispatch.IProcessorInvoker]
+  C Conduit.Core.Dispatch.PreProcessorInvoker`1()
+  M Conduit.Core.Dispatch.PreProcessorInvoker`1.InvokeAsync`0(System.Object, System.Object, System.IServiceProvider, System.Threading.CancellationToken) -> System.Threading.Tasks.ValueTask
+T Conduit.Core.Dispatch.RequestExceptionDispatcher`2 [sealed; implements:Conduit.Core.Dispatch.IExceptionDispatcher`2[TRequest,TResponse]]
+  C Conduit.Core.Dispatch.RequestExceptionDispatcher`2(System.Collections.Generic.IEnumerable`1[Conduit.Core.Dispatch.IExceptionHandlerInvoker], System.Collections.Generic.IEnumerable`1[Conduit.Core.Dispatch.IExceptionActionInvoker], Conduit.Abstractions.ExceptionActionStrategy)
+  M Conduit.Core.Dispatch.RequestExceptionDispatcher`2.DispatchAsync`0(TRequest, System.Exception, System.IServiceProvider, System.Threading.CancellationToken) -> System.Threading.Tasks.ValueTask`1[Conduit.Abstractions.ExceptionOutcome`1[TResponse]]
+T Conduit.Core.Dispatch.RequestHandlerEntry
+  P Conduit.Core.Dispatch.RequestHandlerEntry.HandlerServiceType : System.Type (get)
+  P Conduit.Core.Dispatch.RequestHandlerEntry.RequestType : System.Type (get)
+  P Conduit.Core.Dispatch.RequestHandlerEntry.ResponseType : System.Type (get)
+T Conduit.Core.Dispatch.RequestHandlerEntry`1 [base:Conduit.Core.Dispatch.RequestHandlerEntry]
+  M Conduit.Core.Dispatch.RequestHandlerEntry`1.InvokeAsync`0(System.Object, System.IServiceProvider, System.Threading.CancellationToken) -> System.Threading.Tasks.ValueTask`1[TResponse]
+  P Conduit.Core.Dispatch.RequestHandlerEntry`1.ResponseType : System.Type (get)
+T Conduit.Core.Dispatch.RequestHandlerEntry`2 [sealed; base:]
+  C Conduit.Core.Dispatch.RequestHandlerEntry`2()
+  M Conduit.Core.Dispatch.RequestHandlerEntry`2.InvokeAsync`0(System.Object, System.IServiceProvider, System.Threading.CancellationToken) -> System.Threading.Tasks.ValueTask`1[TResponse]
+  P Conduit.Core.Dispatch.RequestHandlerEntry`2.HandlerServiceType : System.Type (get)
+  P Conduit.Core.Dispatch.RequestHandlerEntry`2.RequestType : System.Type (get)
+T Conduit.Core.Dispatch.RequestPostProcessorRunner [sealed; implements:Conduit.Core.Dispatch.IRequestPostProcessorRunner]
+  C Conduit.Core.Dispatch.RequestPostProcessorRunner(System.Collections.Generic.IReadOnlyDictionary`2[System.Type,Conduit.Core.Dispatch.IProcessorInvoker])
+  M Conduit.Core.Dispatch.RequestPostProcessorRunner.RunAsync`0(System.Object, System.Object, System.IServiceProvider, System.Threading.CancellationToken) -> System.Threading.Tasks.ValueTask
+T Conduit.Core.Dispatch.RequestPreProcessorRunner [sealed; implements:Conduit.Core.Dispatch.IRequestPreProcessorRunner]
+  C Conduit.Core.Dispatch.RequestPreProcessorRunner(System.Collections.Generic.IReadOnlyDictionary`2[System.Type,Conduit.Core.Dispatch.IProcessorInvoker])
+  M Conduit.Core.Dispatch.RequestPreProcessorRunner.RunAsync`0(System.Object, System.IServiceProvider, System.Threading.CancellationToken) -> System.Threading.Tasks.ValueTask
+T Conduit.Core.Dispatch.StreamHandlerEntry
+  P Conduit.Core.Dispatch.StreamHandlerEntry.HandlerServiceType : System.Type (get)
+  P Conduit.Core.Dispatch.StreamHandlerEntry.ItemType : System.Type (get)
+  P Conduit.Core.Dispatch.StreamHandlerEntry.RequestType : System.Type (get)
+T Conduit.Core.Dispatch.StreamHandlerEntry`1 [base:Conduit.Core.Dispatch.StreamHandlerEntry]
+  M Conduit.Core.Dispatch.StreamHandlerEntry`1.InvokeStream`0(System.Object, System.IServiceProvider, System.Threading.CancellationToken) -> System.Collections.Generic.IAsyncEnumerable`1[TResponse]
+  P Conduit.Core.Dispatch.StreamHandlerEntry`1.ItemType : System.Type (get)
+T Conduit.Core.Dispatch.StreamHandlerEntry`2 [sealed; base:]
+  C Conduit.Core.Dispatch.StreamHandlerEntry`2()
+  M Conduit.Core.Dispatch.StreamHandlerEntry`2.InvokeStream`0(System.Object, System.IServiceProvider, System.Threading.CancellationToken) -> System.Collections.Generic.IAsyncEnumerable`1[TResponse]
+  P Conduit.Core.Dispatch.StreamHandlerEntry`2.HandlerServiceType : System.Type (get)
+  P Conduit.Core.Dispatch.StreamHandlerEntry`2.RequestType : System.Type (get)
+T Conduit.Core.Publishing.AggregatingParallelPublisher [sealed; implements:Conduit.Abstractions.IConcurrentNotificationPublisher+Conduit.Abstractions.INotificationPublisher]
+  C Conduit.Core.Publishing.AggregatingParallelPublisher()
+  M Conduit.Core.Publishing.AggregatingParallelPublisher.PublishAsync`0(System.Collections.Generic.IReadOnlyList`1[Conduit.Abstractions.NotificationHandlerExecutor], Conduit.Contracts.INotification, System.Threading.CancellationToken) -> System.Threading.Tasks.ValueTask
+  P Conduit.Core.Publishing.AggregatingParallelPublisher.Instance : Conduit.Core.Publishing.AggregatingParallelPublisher (get)
+T Conduit.Core.Publishing.ParallelPublisher [sealed; implements:Conduit.Abstractions.IConcurrentNotificationPublisher+Conduit.Abstractions.INotificationPublisher]
+  C Conduit.Core.Publishing.ParallelPublisher()
+  M Conduit.Core.Publishing.ParallelPublisher.PublishAsync`0(System.Collections.Generic.IReadOnlyList`1[Conduit.Abstractions.NotificationHandlerExecutor], Conduit.Contracts.INotification, System.Threading.CancellationToken) -> System.Threading.Tasks.ValueTask
+  P Conduit.Core.Publishing.ParallelPublisher.Instance : Conduit.Core.Publishing.ParallelPublisher (get)
+T Conduit.Core.Publishing.SequentialPublisher [sealed; implements:Conduit.Abstractions.INotificationPublisher]
+  C Conduit.Core.Publishing.SequentialPublisher()
+  M Conduit.Core.Publishing.SequentialPublisher.PublishAsync`0(System.Collections.Generic.IReadOnlyList`1[Conduit.Abstractions.NotificationHandlerExecutor], Conduit.Contracts.INotification, System.Threading.CancellationToken) -> System.Threading.Tasks.ValueTask
+  P Conduit.Core.Publishing.SequentialPublisher.Instance : Conduit.Core.Publishing.SequentialPublisher (get)
+
+# Conduit.DependencyInjection
+T Conduit.DependencyInjection.BehaviorClosingStrategy [sealed]
+  F Conduit.DependencyInjection.BehaviorClosingStrategy.value__ : System.Int32
+  F static Conduit.DependencyInjection.BehaviorClosingStrategy.CloseForScannedRequests : Conduit.DependencyInjection.BehaviorClosingStrategy
+  F static Conduit.DependencyInjection.BehaviorClosingStrategy.CloseInContainer : Conduit.DependencyInjection.BehaviorClosingStrategy
+T Conduit.DependencyInjection.ConduitConfiguration [sealed]
+  C Conduit.DependencyInjection.ConduitConfiguration()
+  M Conduit.DependencyInjection.ConduitConfiguration.AddBehavior`1(Microsoft.Extensions.DependencyInjection.ServiceLifetime) -> Conduit.DependencyInjection.ConduitConfiguration
+  M Conduit.DependencyInjection.ConduitConfiguration.AddOpenBehavior`0(System.Type, Microsoft.Extensions.DependencyInjection.ServiceLifetime) -> Conduit.DependencyInjection.ConduitConfiguration
+  M Conduit.DependencyInjection.ConduitConfiguration.AddOpenStreamBehavior`0(System.Type, Microsoft.Extensions.DependencyInjection.ServiceLifetime) -> Conduit.DependencyInjection.ConduitConfiguration
+  M Conduit.DependencyInjection.ConduitConfiguration.AddRequestPostProcessor`1() -> Conduit.DependencyInjection.ConduitConfiguration
+  M Conduit.DependencyInjection.ConduitConfiguration.AddRequestPreProcessor`1() -> Conduit.DependencyInjection.ConduitConfiguration
+  M Conduit.DependencyInjection.ConduitConfiguration.AddStreamBehavior`1(Microsoft.Extensions.DependencyInjection.ServiceLifetime) -> Conduit.DependencyInjection.ConduitConfiguration
+  M Conduit.DependencyInjection.ConduitConfiguration.AddValidatorAdapter`0(System.Type) -> Conduit.DependencyInjection.ConduitConfiguration
+  M Conduit.DependencyInjection.ConduitConfiguration.RegisterFromAssemblyContaining`1() -> Conduit.DependencyInjection.ConduitConfiguration
+  M Conduit.DependencyInjection.ConduitConfiguration.RegisterFrom`0(System.Reflection.Assembly[]) -> Conduit.DependencyInjection.ConduitConfiguration
+  M Conduit.DependencyInjection.ConduitConfiguration.Register`0(System.Type, System.Type) -> Conduit.DependencyInjection.ConduitConfiguration
+  P Conduit.DependencyInjection.ConduitConfiguration.AllowSingletonLifetime : System.Boolean (getset)
+  P Conduit.DependencyInjection.ConduitConfiguration.Assemblies : System.Collections.Generic.IReadOnlyList`1[System.Reflection.Assembly] (get)
+  P Conduit.DependencyInjection.ConduitConfiguration.AutoRegisterRequestProcessors : System.Boolean (getset)
+  P Conduit.DependencyInjection.ConduitConfiguration.BehaviorClosingStrategy : Conduit.DependencyInjection.BehaviorClosingStrategy (getset)
+  P Conduit.DependencyInjection.ConduitConfiguration.Behaviors : System.Collections.Generic.IReadOnlyList`1[Conduit.DependencyInjection.ConduitOpenBehavior] (get)
+  P Conduit.DependencyInjection.ConduitConfiguration.DispatcherImplementationType : System.Type (getset)
+  P Conduit.DependencyInjection.ConduitConfiguration.EnableStartupValidation : System.Boolean (getset)
+  P Conduit.DependencyInjection.ConduitConfiguration.ExceptionActionStrategy : Conduit.Abstractions.ExceptionActionStrategy (getset)
+  P Conduit.DependencyInjection.ConduitConfiguration.ExplicitHandlers : System.Collections.Generic.IReadOnlyList`1[System.ValueTuple`2[System.Type,System.Type]] (get)
+  P Conduit.DependencyInjection.ConduitConfiguration.IsolateNotificationHandlerScopes : System.Nullable`1[System.Boolean] (getset)
+  P Conduit.DependencyInjection.ConduitConfiguration.Lifetime : Microsoft.Extensions.DependencyInjection.ServiceLifetime (getset)
+  P Conduit.DependencyInjection.ConduitConfiguration.MaxGenericTypeParameters : System.Int32 (getset)
+  P Conduit.DependencyInjection.ConduitConfiguration.MaxGenericTypeRegistrations : System.Int32 (getset)
+  P Conduit.DependencyInjection.ConduitConfiguration.MaxTypesClosing : System.Int32 (getset)
+  P Conduit.DependencyInjection.ConduitConfiguration.NotificationPublisher : Conduit.Abstractions.INotificationPublisher (getset)
+  P Conduit.DependencyInjection.ConduitConfiguration.NotificationPublisherType : System.Type (getset)
+  P Conduit.DependencyInjection.ConduitConfiguration.PostProcessors : System.Collections.Generic.IReadOnlyList`1[System.Type] (get)
+  P Conduit.DependencyInjection.ConduitConfiguration.PreProcessors : System.Collections.Generic.IReadOnlyList`1[System.Type] (get)
+  P Conduit.DependencyInjection.ConduitConfiguration.RegisterGenericHandlers : System.Boolean (getset)
+  P Conduit.DependencyInjection.ConduitConfiguration.RegistrationTimeout : System.Int32 (getset)
+  P Conduit.DependencyInjection.ConduitConfiguration.StreamBehaviors : System.Collections.Generic.IReadOnlyList`1[Conduit.DependencyInjection.ConduitOpenBehavior] (get)
+  P Conduit.DependencyInjection.ConduitConfiguration.TypeEvaluator : System.Func`2[System.Type,System.Boolean] (getset)
+  P Conduit.DependencyInjection.ConduitConfiguration.ValidatorAdapters : System.Collections.Generic.IReadOnlyList`1[System.Type] (get)
+T Conduit.DependencyInjection.ConduitOpenBehavior [sealed]
+  C Conduit.DependencyInjection.ConduitOpenBehavior(System.Type, Microsoft.Extensions.DependencyInjection.ServiceLifetime)
+  M Conduit.DependencyInjection.ConduitOpenBehavior.<Clone>$`0() -> Conduit.DependencyInjection.ConduitOpenBehavior
+  M Conduit.DependencyInjection.ConduitOpenBehavior.Deconstruct`0(System.Type&, Microsoft.Extensions.DependencyInjection.ServiceLifetime&) -> System.Void
+  M Conduit.DependencyInjection.ConduitOpenBehavior.Equals`0(Conduit.DependencyInjection.ConduitOpenBehavior) -> System.Boolean
+  M Conduit.DependencyInjection.ConduitOpenBehavior.Equals`0(System.Object) -> System.Boolean
+  M Conduit.DependencyInjection.ConduitOpenBehavior.GetHashCode`0() -> System.Int32
+  M Conduit.DependencyInjection.ConduitOpenBehavior.ToString`0() -> System.String
+  P Conduit.DependencyInjection.ConduitOpenBehavior.BehaviorType : System.Type (getset)
+  P Conduit.DependencyInjection.ConduitOpenBehavior.Lifetime : Microsoft.Extensions.DependencyInjection.ServiceLifetime (getset)
+T Conduit.DependencyInjection.ConduitServiceCollectionExtensions [static]
+  M static Conduit.DependencyInjection.ConduitServiceCollectionExtensions.AddConduit`0(Microsoft.Extensions.DependencyInjection.IServiceCollection, Conduit.DependencyInjection.GeneratedRegistration, System.Action`1[Conduit.DependencyInjection.ConduitConfiguration]) -> Microsoft.Extensions.DependencyInjection.IServiceCollection
+  M static Conduit.DependencyInjection.ConduitServiceCollectionExtensions.AddConduit`0(Microsoft.Extensions.DependencyInjection.IServiceCollection, System.Action`1[Conduit.DependencyInjection.ConduitConfiguration]) -> Microsoft.Extensions.DependencyInjection.IServiceCollection
+T Conduit.DependencyInjection.GeneratedExceptionAction [sealed]
+  C Conduit.DependencyInjection.GeneratedExceptionAction(System.Type, System.Type)
+  M Conduit.DependencyInjection.GeneratedExceptionAction.Deconstruct`0(System.Type&, System.Type&) -> System.Void
+  M Conduit.DependencyInjection.GeneratedExceptionAction.Equals`0(Conduit.DependencyInjection.GeneratedExceptionAction) -> System.Boolean
+  M Conduit.DependencyInjection.GeneratedExceptionAction.Equals`0(System.Object) -> System.Boolean
+  M Conduit.DependencyInjection.GeneratedExceptionAction.GetHashCode`0() -> System.Int32
+  M Conduit.DependencyInjection.GeneratedExceptionAction.ToString`0() -> System.String
+  P Conduit.DependencyInjection.GeneratedExceptionAction.ExceptionType : System.Type (getset)
+  P Conduit.DependencyInjection.GeneratedExceptionAction.RequestType : System.Type (getset)
+T Conduit.DependencyInjection.GeneratedExceptionHandler [sealed]
+  C Conduit.DependencyInjection.GeneratedExceptionHandler(System.Type, System.Type, System.Type)
+  M Conduit.DependencyInjection.GeneratedExceptionHandler.Deconstruct`0(System.Type&, System.Type&, System.Type&) -> System.Void
+  M Conduit.DependencyInjection.GeneratedExceptionHandler.Equals`0(Conduit.DependencyInjection.GeneratedExceptionHandler) -> System.Boolean
+  M Conduit.DependencyInjection.GeneratedExceptionHandler.Equals`0(System.Object) -> System.Boolean
+  M Conduit.DependencyInjection.GeneratedExceptionHandler.GetHashCode`0() -> System.Int32
+  M Conduit.DependencyInjection.GeneratedExceptionHandler.ToString`0() -> System.String
+  P Conduit.DependencyInjection.GeneratedExceptionHandler.ExceptionType : System.Type (getset)
+  P Conduit.DependencyInjection.GeneratedExceptionHandler.RequestType : System.Type (getset)
+  P Conduit.DependencyInjection.GeneratedExceptionHandler.ResponseType : System.Type (getset)
+T Conduit.DependencyInjection.GeneratedRegistration [sealed]
+  C Conduit.DependencyInjection.GeneratedRegistration()
+  P Conduit.DependencyInjection.GeneratedRegistration.ExceptionActions : System.Collections.Generic.IReadOnlyList`1[Conduit.DependencyInjection.GeneratedExceptionAction] (getset)
+  P Conduit.DependencyInjection.GeneratedRegistration.ExceptionHandlers : System.Collections.Generic.IReadOnlyList`1[Conduit.DependencyInjection.GeneratedExceptionHandler] (getset)
+  P Conduit.DependencyInjection.GeneratedRegistration.Services : System.Collections.Generic.IReadOnlyList`1[Conduit.DependencyInjection.GeneratedServiceRegistration] (getset)
+  P Conduit.DependencyInjection.GeneratedRegistration.Tables : Conduit.Core.Dispatch.DispatchTables (getset)
+T Conduit.DependencyInjection.GeneratedServiceRegistration [sealed]
+  C Conduit.DependencyInjection.GeneratedServiceRegistration(System.Type, System.Type, Microsoft.Extensions.DependencyInjection.ServiceLifetime)
+  M Conduit.DependencyInjection.GeneratedServiceRegistration.Deconstruct`0(System.Type&, System.Type&, Microsoft.Extensions.DependencyInjection.ServiceLifetime&) -> System.Void
+  M Conduit.DependencyInjection.GeneratedServiceRegistration.Equals`0(Conduit.DependencyInjection.GeneratedServiceRegistration) -> System.Boolean
+  M Conduit.DependencyInjection.GeneratedServiceRegistration.Equals`0(System.Object) -> System.Boolean
+  M Conduit.DependencyInjection.GeneratedServiceRegistration.GetHashCode`0() -> System.Int32
+  M Conduit.DependencyInjection.GeneratedServiceRegistration.ToString`0() -> System.String
+  P Conduit.DependencyInjection.GeneratedServiceRegistration.ImplementationType : System.Type (getset)
+  P Conduit.DependencyInjection.GeneratedServiceRegistration.Lifetime : Microsoft.Extensions.DependencyInjection.ServiceLifetime (getset)
+  P Conduit.DependencyInjection.GeneratedServiceRegistration.ServiceType : System.Type (getset)
+
+# Conduit.FluentValidation
+T Conduit.FluentValidation.FluentValidationConduitExtensions [static]
+  M static Conduit.FluentValidation.FluentValidationConduitExtensions.AddFluentValidation`0(Conduit.DependencyInjection.ConduitConfiguration) -> Conduit.DependencyInjection.ConduitConfiguration
+T Conduit.FluentValidation.FluentValidationRequestValidator`1 [sealed; implements:Conduit.Abstractions.IRequestValidator`1[TRequest]]
+  C Conduit.FluentValidation.FluentValidationRequestValidator`1(System.Collections.Generic.IEnumerable`1[FluentValidation.IValidator`1[TRequest]])
+  M Conduit.FluentValidation.FluentValidationRequestValidator`1.ValidateAsync`0(TRequest, System.Threading.CancellationToken) -> System.Threading.Tasks.ValueTask`1[System.Collections.Generic.IReadOnlyList`1[Conduit.Abstractions.ValidationError]]
