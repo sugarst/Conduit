@@ -1,0 +1,22 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <IsPackable>false</IsPackable>
+    <PackageId>Conduit.DependencyInjection</PackageId>
+    <Description>Dependency injection integration: assembly scanning, generic registration guards, open-behavior closing, startup validation and notification scope isolation.</Description>
+  </PropertyGroup>
+
+  <!--
+    刻意不做 AOT 兼容声明：Mode A（反射扫描）在设计上就依赖运行时元数据，
+    AOT 场景请走 Mode B（源生成 + AddGeneratedConduit），见 README「Native AOT」。
+  -->
+  <ItemGroup>
+    <PackageReference Include="Microsoft.Extensions.DependencyInjection.Abstractions" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="../Conduit.Abstractions/Conduit.Abstractions.csproj" />
+    <ProjectReference Include="../Conduit.Core/Conduit.Core.csproj" />
+  </ItemGroup>
+
+</Project>

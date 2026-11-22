@@ -1,0 +1,259 @@
+using System.Reflection;
+using Conduit.Abstractions;
+using Conduit.Contracts;
+
+namespace Conduit.DependencyInjection.Scanning;
+
+/// <summary>一条待注册的服务映射。</summary>
+internal readonly record struct ServiceMapping(Type ServiceType, Type ImplementationType, bool IsOpenGeneric);
+
+/// <summary>异常处理器登记项。</summary>
+internal readonly record struct ExceptionHandlerMapping(Type RequestType, Type ResponseType, Type ExceptionType, Type ImplementationType);
+
+/// <summary>异常动作登记项。</summary>
+internal readonly record struct ExceptionActionMapping(Type RequestType, Type ExceptionType, Type ImplementationType);
+
+/// <summary>扫描结果。</summary>
+internal sealed class ScanResult
+{
+    public List<ServiceMapping> Handlers { get; } = [];
+    public List<ServiceMapping> NotificationHandlers { get; } = [];
+    public List<(Type Request, Type Response)> RequestPairs { get; } = [];
+    public List<(Type Request, Type Response)> StreamPairs { get; } = [];
+    public List<ExceptionHandlerMapping> ExceptionHandlers { get; } = [];
+    public List<ExceptionActionMapping> ExceptionActions { get; } = [];
+    public List<(Type Request, Type Implementation)> PreProcessors { get; } = [];
+    public List<(Type Request, Type Response, Type Implementation)> PostProcessors { get; } = [];
+    public List<(Type ServiceType, Type Implementation)> Validators { get; } = [];
+    public List<string> Notes { get; } = [];
+
+    public HashSet<Type> NotificationServiceTypes { get; } = [];
+}
+
+/// <summary>
+/// Mode A 程序集扫描器：一次性枚举类型并归类，重复注册立即 fail-fast。
+/// </summary>
+internal sealed class AssemblyScanner(ConduitConfiguration configuration, RegistrationGuard guard)
+{
+    private static readonly Type RequestHandlerOpen = typeof(IRequestHandler<,>);
+    private static readonly Type NotificationHandlerOpen = typeof(INotificationHandler<>);
+    private static readonly Type StreamHandlerOpen = typeof(IStreamRequestHandler<,>);
+    private static readonly Type ExceptionHandlerOpen = typeof(IRequestExceptionHandler<,,>);
+    private static readonly Type ExceptionActionOpen = typeof(IRequestExceptionAction<,>);
+    private static readonly Type PreProcessorOpen = typeof(IRequestPreProcessor<>);
+    private static readonly Type PostProcessorOpen = typeof(IRequestPostProcessor<,>);
+    private static readonly Type ValidatorOpen = typeof(IRequestValidator<>);
+
+    private readonly ScanResult _result = new();
+    private readonly Dictionary<Type, Type> _handlerServiceTypes = [];
+
+    public ScanResult Scan()
+    {
+        foreach (var assembly in configuration.Assemblies)
+        {
+            guard.CheckTimeout();
+            foreach (var type in SafeGetTypes(assembly))
+            {
+                Inspect(type);
+            }
+        }
+
+        foreach (var (requestType, handlerType) in configuration.ExplicitHandlers)
+        {
+            InspectExplicitPair(requestType, handlerType);
+        }
+
+        return _result;
+    }
+
+    private void Inspect(Type type)
+    {
+        if (type is null || !type.IsClass || type.IsAbstract || type.IsValueType)
+        {
+            return;
+        }
+
+        if (type.IsGenericTypeDefinition || type.ContainsGenericParameters)
+        {
+            InspectOpenGenericHandler(type);
+            return;
+        }
+
+        if (!configuration.TypeEvaluator(type))
+        {
+            return;
+        }
+
+        Type[] interfaces;
+        try
+        {
+            interfaces = type.GetInterfaces();
+        }
+        catch (Exception exception) when (exception is NotSupportedException or TypeLoadException or FileNotFoundException)
+        {
+            // 反射容错：不可读的元数据（缺失依赖 / F# 编译单元）跳过，不阻断整体扫描
+            _result.Notes.Add($"Skipped unreadable type '{type.FullName}': {exception.Message}");
+            return;
+        }
+
+        foreach (var @interface in interfaces)
+        {
+            if (!@interface.IsGenericType)
+            {
+                continue;
+            }
+
+            var definition = @interface.GetGenericTypeDefinition();
+            var arguments = @interface.GetGenericArguments();
+
+            if (definition == RequestHandlerOpen)
+            {
+                RegisterHandler(@interface, arguments[0], arguments[1], type);
+            }
+            else if (definition == StreamHandlerOpen)
+            {
+                RegisterStreamHandler(@interface, arguments[0], arguments[1], type);
+            }
+            else if (definition == NotificationHandlerOpen)
+            {
+                RegisterNotificationHandler(@interface, arguments[0], type);
+            }
+            else if (definition == ExceptionHandlerOpen)
+            {
+                _result.ExceptionHandlers.Add(new ExceptionHandlerMapping(arguments[0], arguments[1], arguments[2], type));
+            }
+            else if (definition == ExceptionActionOpen)
+            {
+                _result.ExceptionActions.Add(new ExceptionActionMapping(arguments[0], arguments[1], type));
+            }
+            else if (definition == PreProcessorOpen && configuration.AutoRegisterRequestProcessors)
+            {
+                _result.PreProcessors.Add((arguments[0], type));
+            }
+            else if (definition == PostProcessorOpen && configuration.AutoRegisterRequestProcessors)
+            {
+                _result.PostProcessors.Add((arguments[0], arguments[1], type));
+            }
+            else if (definition == ValidatorOpen)
+            {
+                guard.IncrementRegistrations();
+                _result.Validators.Add((@interface, type));
+            }
+        }
+    }
+
+    private void RegisterHandler(Type serviceType, Type requestType, Type responseType, Type implementationType)
+    {
+        RegisterHandlerCore(serviceType, implementationType);
+        _result.RequestPairs.Add((requestType, responseType));
+    }
+
+    private void RegisterStreamHandler(Type serviceType, Type requestType, Type responseType, Type implementationType)
+    {
+        RegisterHandlerCore(serviceType, implementationType);
+        _result.StreamPairs.Add((requestType, responseType));
+    }
+
+    private void RegisterHandlerCore(Type serviceType, Type implementationType)
+    {
+        if (_handlerServiceTypes.TryGetValue(serviceType, out var existing))
+        {
+            throw new DuplicateHandlerException(serviceType, [existing, implementationType]);
+        }
+
+        guard.IncrementRegistrations();
+        _handlerServiceTypes.Add(serviceType, implementationType);
+        _result.Handlers.Add(new ServiceMapping(serviceType, implementationType, false));
+    }
+
+    private void RegisterNotificationHandler(Type serviceType, Type notificationType, Type implementationType)
+    {
+        // 通知允许同一实现注册多个通知接口；同一 (通知, 实现) 组合重复出现则视为重复注册
+        if (_result.NotificationHandlers.Any(m => m.ServiceType == serviceType && m.ImplementationType == implementationType))
+        {
+            return;
+        }
+
+        guard.IncrementRegistrations();
+        _result.NotificationServiceTypes.Add(serviceType);
+        _result.NotificationHandlers.Add(new ServiceMapping(serviceType, implementationType, false));
+    }
+
+    private void InspectOpenGenericHandler(Type type)
+    {
+        if (!configuration.RegisterGenericHandlers || !type.IsGenericTypeDefinition)
+        {
+            return;
+        }
+
+        if (!configuration.TypeEvaluator(type))
+        {
+            return;
+        }
+
+        guard.AddTypeParameters(type.GetGenericArguments().Length);
+
+        foreach (var @interface in type.GetInterfaces())
+        {
+            if (!@interface.IsGenericType)
+            {
+                continue;
+            }
+
+            var definition = @interface.GetGenericTypeDefinition();
+            if (definition == RequestHandlerOpen || definition == StreamHandlerOpen || definition == NotificationHandlerOpen)
+            {
+                guard.IncrementRegistrations();
+                _result.Handlers.Add(new ServiceMapping(definition, type, true));
+                _result.Notes.Add(
+                    $"Open generic handler '{type.FullName}' registered as open generic; "
+                    + "its request types are closed by the container and are not part of the dispatch table. "
+                    + "Use cfg.Register(closedRequestType, closedHandlerType) for table-driven dispatch.");
+            }
+        }
+    }
+
+    private void InspectExplicitPair(Type requestType, Type handlerType)
+    {
+        foreach (var @interface in handlerType.GetInterfaces())
+        {
+            if (!@interface.IsGenericType)
+            {
+                continue;
+            }
+
+            var definition = @interface.GetGenericTypeDefinition();
+            var arguments = @interface.GetGenericArguments();
+            var matchesRequest = arguments[0] == requestType;
+            if (!matchesRequest)
+            {
+                continue;
+            }
+
+            if (definition == RequestHandlerOpen)
+            {
+                RegisterHandler(@interface, arguments[0], arguments[1], handlerType);
+            }
+            else if (definition == StreamHandlerOpen)
+            {
+                RegisterStreamHandler(@interface, arguments[0], arguments[1], handlerType);
+            }
+        }
+    }
+
+    private static IEnumerable<Type> SafeGetTypes(Assembly assembly)
+    {
+        try
+        {
+            return assembly.GetTypes();
+        }
+        catch (ReflectionTypeLoadException exception)
+        {
+            return exception.Types.Where(static t => t is not null)!;
+        }
+        catch (Exception exception) when (exception is NotSupportedException or FileLoadException)
+        {
+            return [];
+        }
+    }
+}
