@@ -1,0 +1,14 @@
+# 统一换行符：源文件与配置在仓库中始终以 LF 存储
+* text=auto eol=lf
+
+# 二进制资源不做换行符转换
+*.dll binary
+*.exe binary
+*.pdb binary
+*.nupkg binary
+*.snupkg binary
+*.png binary
+*.jpg binary
+*.gif binary
+*.ico binary
+*.zip binary
