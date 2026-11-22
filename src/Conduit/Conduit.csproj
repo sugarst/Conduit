@@ -1,0 +1,93 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <IsPackable>true</IsPackable>
+    <PackageId>Conduit</PackageId>
+    <Description>In-process message dispatcher: requests, notifications, streaming, pipeline behaviors, exception mapping and built-in observability. Bundles Conduit.Abstractions, Conduit.Core and Conduit.DependencyInjection, and ships the compile-time dispatch generator.</Description>
+    <PackageReadmeFile>README.md</PackageReadmeFile>
+
+    <!-- 主包只承载运行时程序集，自身不产出 lib 资产 -->
+    <IncludeBuildOutput>false</IncludeBuildOutput>
+    <TargetsForTfmSpecificContentInPackage>$(TargetsForTfmSpecificContentInPackage);ConduitIncludeRuntimeAssemblies;ConduitIncludeSourceGenerator</TargetsForTfmSpecificContentInPackage>
+    <NoWarn>$(NoWarn);NU5128</NoWarn>
+  </PropertyGroup>
+
+  <!-- 唯一真实运行时依赖（DI 适配层所需） -->
+  <ItemGroup>
+    <PackageReference Include="Microsoft.Extensions.DependencyInjection.Abstractions" />
+  </ItemGroup>
+
+  <!--
+    契约包按技术方案第 11 节以区间依赖方式引用：契约独立版本化，
+    主包不内嵌 Conduit.Contracts.dll，从结构上排除 R10（类型重复定义）风险。
+  -->
+  <ItemGroup>
+    <ProjectReference Include="../Conduit.Contracts/Conduit.Contracts.csproj"
+                      Version="[1.0.0, 2.0.0)" />
+  </ItemGroup>
+
+  <!--
+    PrivateAssets="all"：以下内部工程只用于本地编译与打包内容收集，
+    不作为 NuGet 依赖写入 nuspec（它们的 dll 已直接进 lib/net10.0）。
+  -->
+  <ItemGroup>
+    <ProjectReference Include="../Conduit.Abstractions/Conduit.Abstractions.csproj" PrivateAssets="all" />
+    <ProjectReference Include="../Conduit.Core/Conduit.Core.csproj" PrivateAssets="all" />
+    <ProjectReference Include="../Conduit.DependencyInjection/Conduit.DependencyInjection.csproj" PrivateAssets="all" />
+  </ItemGroup>
+
+  <!-- 源生成器随后进 analyzers/dotnet/cs；不参与运行时引用，也不产生包依赖 -->
+  <ItemGroup>
+    <ProjectReference Include="../Conduit.SourceGenerator/Conduit.SourceGenerator.csproj"
+                      ReferenceOutputAssembly="false"
+                      PrivateAssets="all" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <None Include="README.md" Pack="true" PackagePath="/" />
+    <None Include="../../LICENSE" Pack="true" PackagePath="/" />
+  </ItemGroup>
+
+  <!-- 把 Abstractions/Core/DI 的编译产物（含 XML 文档）打进 lib/net10.0 -->
+  <Target Name="ConduitIncludeRuntimeAssemblies" DependsOnTargets="ResolveReferences">
+    <ItemGroup>
+      <TfmSpecificPackageFile Include="@(ReferenceCopyLocalPaths)"
+                              Condition="'%(ReferenceCopyLocalPaths.ReferenceSourceTarget)' == 'ProjectReference' and '%(ReferenceCopyLocalPaths.Filename)' != 'Conduit.Contracts'">
+        <PackagePath>lib/$(TargetFramework)</PackagePath>
+      </TfmSpecificPackageFile>
+    </ItemGroup>
+  </Target>
+
+  <!--
+    技术方案第 11 节「版本约束」：主包以 [1.0.0, 2.0.0) 区间依赖契约包。
+    ProjectReference 上声明的 Version 元数据不会被 pack 采纳——依赖版本实际来自
+    NuGet pack 的 _GetProjectVersion target（返回精确 PackageVersion），
+    因此在依赖项求值完成后改写 ProjectVersion 元数据，让 nuspec 落成区间。
+  -->
+  <Target Name="ConduitPinContractsVersionRange" AfterTargets="_GetProjectReferenceVersions">
+    <ItemGroup>
+      <_ProjectReferencesWithVersions Update="$([System.IO.Path]::GetFullPath('$(MSBuildThisFileDirectory)..\Conduit.Contracts\Conduit.Contracts.csproj'))">
+        <ProjectVersion>[1.0.0, 2.0.0)</ProjectVersion>
+      </_ProjectReferencesWithVersions>
+    </ItemGroup>
+  </Target>
+
+  <!-- 源生成器以 Roslyn 分析器资产形式随主包分发（netstandard2.0 宿主） -->
+  <Target Name="ConduitIncludeSourceGenerator">
+    <!-- 显式传入 netstandard2.0：避免父项目 TFM 传播导致 GetTargetPath 去找 net10.0 输出 -->
+    <MSBuild Projects="../Conduit.SourceGenerator/Conduit.SourceGenerator.csproj"
+             Targets="GetTargetPath"
+             Properties="Configuration=$(Configuration);TargetFramework=netstandard2.0;TargetFrameworks=">
+      <Output TaskParameter="TargetOutputs" ItemName="_ConduitGeneratorAssembly" />
+    </MSBuild>
+    <ItemGroup>
+      <TfmSpecificPackageFile Include="@(_ConduitGeneratorAssembly)">
+        <PackagePath>analyzers/dotnet/cs</PackagePath>
+      </TfmSpecificPackageFile>
+      <TfmSpecificPackageFile Include="../Conduit.SourceGenerator/AnalyzerReleases.Shipped.md">
+        <PackagePath>analyzers/dotnet/cs</PackagePath>
+      </TfmSpecificPackageFile>
+    </ItemGroup>
+  </Target>
+
+</Project>
