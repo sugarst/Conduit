@@ -1,0 +1,124 @@
+name: ci
+
+on:
+  push:
+    branches: [main, master]
+  pull_request:
+  workflow_dispatch:
+
+env:
+  DOTNET_NOLOGO: true
+  DOTNET_CLI_TELEMETRY_OPTOUT: true
+  DOTNET_SKIP_FIRST_TIME_EXPERIENCE: true
+
+jobs:
+  build-test:
+    name: build / test / compliance / pack
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup .NET (从 global.json 取版本)
+        uses: actions/setup-dotnet@v4
+        with:
+          global-json-file: global.json
+
+      - name: Restore
+        run: dotnet restore Conduit.slnx
+
+      - name: Build
+        run: dotnet build Conduit.slnx -c Release --no-restore
+
+      - name: 源码合规门禁（红线 / 依赖 / TFM）
+        run: dotnet run scripts/check_compliance.cs
+
+      - name: 规格与架构测试（TUnit / MTP）
+        run: >
+          dotnet run --project tests/Conduit.Tests -c Release --no-build --
+          --report-trx --coverage
+
+      - name: 源生成器测试
+        run: >
+          dotnet run --project tests/Conduit.GeneratorTests -c Release --no-build --
+          --report-trx
+
+      - name: 样例冒烟
+        run: dotnet run --project samples/Conduit.Samples -c Release --no-build
+
+      - name: Pack（两个必发包 + 一个可选适配包）
+        run: |
+          dotnet pack src/Conduit.Contracts -c Release -o artifacts
+          dotnet pack src/Conduit -c Release -o artifacts
+          dotnet pack src/Conduit.FluentValidation -c Release -o artifacts
+
+      - name: 包结构合规门禁
+        run: dotnet run scripts/check_compliance.cs -- --packages
+
+      - name: 上传测试与覆盖率报告
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: test-results
+          path: |
+            tests/**/bin/Release/**/TestResults/**
+          if-no-files-found: ignore
+
+      - name: 上传 NuGet 包
+        uses: actions/upload-artifact@v4
+        with:
+          name: nupkg
+          path: artifacts/*.nupkg
+          if-no-files-found: error
+
+  benchmark:
+    name: benchmark 门禁
+    needs: build-test
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-dotnet@v4
+        with:
+          global-json-file: global.json
+
+      - name: 运行基线基准
+        run: >
+          dotnet run --project benchmarks/Conduit.Benchmarks -c Release --
+          --job short --exporters json
+
+      - name: 与基线比较（超出 2 倍即止损）
+        run: |
+          REPORT=$(ls BenchmarkDotNet.Artifacts/results/*full-compressed.json | head -1)
+          dotnet run scripts/check_benchmark.cs -- --report "$REPORT"
+
+      - name: 上传基准报告
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: benchmark-report
+          path: BenchmarkDotNet.Artifacts/results/**
+          if-no-files-found: ignore
+
+  aot:
+    name: Native AOT publish + smoke
+    needs: build-test
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-dotnet@v4
+        with:
+          global-json-file: global.json
+
+      - name: 安装 AOT 链接工具链
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y --no-install-recommends clang zlib1g-dev
+
+      - name: PublishAot
+        run: >
+          dotnet publish tests/Conduit.AotTests/Conduit.AotTests.csproj
+          -c Release -r linux-x64 -o out/aot
+
+      - name: AOT smoke
+        run: ./out/aot/Conduit.AotTests
