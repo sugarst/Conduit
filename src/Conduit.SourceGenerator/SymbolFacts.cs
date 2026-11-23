@@ -1,3 +1,4 @@
+using System.Collections.Immutable;
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
 using Microsoft.CodeAnalysis.Text;
@@ -42,79 +43,55 @@ internal static class SymbolFacts
     private const string AbstractionsNamespace = "Conduit.Abstractions";
     private const string ContractsNamespace = "Conduit.Contracts";
 
-    public static HandlerModel? CreateHandler(GeneratorSyntaxContext context)
+    public static ImmutableArray<HandlerModel> CreateHandlers(GeneratorSyntaxContext context)
     {
         var symbol = context.SemanticModel.GetDeclaredSymbol(context.Node) as INamedTypeSymbol;
-        if (symbol is null || symbol.IsAbstract || symbol.IsStatic || symbol.TypeKind is not (TypeKind.Class or TypeKind.Struct))
+        if (symbol is null || symbol.IsAbstract || symbol.IsStatic || symbol.IsGenericType
+            || symbol.TypeKind is not (TypeKind.Class or TypeKind.Struct))
         {
-            return null;
+            return [];
         }
 
-        if (symbol.IsGenericType)
-        {
-            return null;
-        }
-
-        HandlerModel? model = null;
-        var handler = symbol.ToDisplayString(SymbolDisplayFormat.FullyQualifiedFormat);
-
+        var handler = FullyQualified(symbol);
+        var models = ImmutableArray.CreateBuilder<HandlerModel>();
         foreach (var @interface in symbol.AllInterfaces)
         {
-            if (!@interface.IsGenericType)
+            if (@interface.ContainingNamespace.ToDisplayString() != AbstractionsNamespace)
+            {
+                continue;
+            }
+
+            var kind = (@interface.Name, @interface.Arity) switch
+            {
+                ("IRequestHandler", 2) => HandlerKind.Request,
+                ("IStreamRequestHandler", 2) => HandlerKind.Stream,
+                ("INotificationHandler", 1) => HandlerKind.Notification,
+                ("IRequestExceptionHandler", 3) => HandlerKind.ExceptionHandler,
+                ("IRequestExceptionAction", 2) => HandlerKind.ExceptionAction,
+                ("IRequestPreProcessor", 1) => HandlerKind.PreProcessor,
+                ("IRequestPostProcessor", 2) => HandlerKind.PostProcessor,
+                _ => (HandlerKind?)null,
+            };
+
+            if (kind is null)
             {
                 continue;
             }
 
             var arguments = @interface.TypeArguments;
-
-            if (Matches(@interface, AbstractionsNamespace, "IRequestHandler", 2))
+            var response = kind is HandlerKind.Request or HandlerKind.Stream or HandlerKind.ExceptionHandler or HandlerKind.PostProcessor
+                ? FullyQualified(arguments[1])
+                : string.Empty;
+            var exception = kind switch
             {
-                model ??= new HandlerModel(
-                    HandlerKind.Request,
-                    handler,
-                    FullyQualified(arguments[0]),
-                    FullyQualified(arguments[1]),
-                    string.Empty);
-            }
-            else if (Matches(@interface, AbstractionsNamespace, "IStreamRequestHandler", 2))
-            {
-                model ??= new HandlerModel(
-                    HandlerKind.Stream,
-                    handler,
-                    FullyQualified(arguments[0]),
-                    FullyQualified(arguments[1]),
-                    string.Empty);
-            }
-            else if (Matches(@interface, AbstractionsNamespace, "INotificationHandler", 1))
-            {
-                model ??= new HandlerModel(
-                    HandlerKind.Notification,
-                    handler,
-                    FullyQualified(arguments[0]),
-                    string.Empty,
-                    string.Empty);
-            }
-            else if (Matches(@interface, AbstractionsNamespace, "IRequestExceptionHandler", 3))
-            {
-                model ??= new HandlerModel(
-                    HandlerKind.ExceptionHandler,
-                    handler,
-                    FullyQualified(arguments[0]),
-                    FullyQualified(arguments[1]),
-                    FullyQualified(arguments[2]));
-            }
-            else if (Matches(@interface, AbstractionsNamespace, "IRequestExceptionAction", 2))
-            {
-                model ??= new HandlerModel(
-                    HandlerKind.ExceptionAction,
-                    handler,
-                    FullyQualified(arguments[0]),
-                    string.Empty,
-                    FullyQualified(arguments[1]));
-            }
+                HandlerKind.ExceptionHandler => FullyQualified(arguments[2]),
+                HandlerKind.ExceptionAction => FullyQualified(arguments[1]),
+                _ => string.Empty,
+            };
+            models.Add(new HandlerModel(kind.Value, handler, FullyQualified(arguments[0]), response, exception));
         }
 
-        return model;
+        return models.ToImmutable();
     }
 
     public static RequestModel? CreateRequest(GeneratorSyntaxContext context)

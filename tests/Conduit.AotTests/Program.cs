@@ -39,10 +39,11 @@ public static class Program
             return 1;
         }
 
-        await dispatcher.PublishAsync(new AotEvent("ok"));
-        if (AotEventHandler.Count != 1)
+        INotification notification = new AotEvent("ok");
+        await dispatcher.PublishAsync(notification);
+        if (AotEventHandler.Count != 1 || AotAuditHandler.Count != 1)
         {
-            Console.Error.WriteLine($"FAIL publish: expected 1 handler call, got {AotEventHandler.Count}");
+            Console.Error.WriteLine($"FAIL publish: expected one call per handler, got {AotEventHandler.Count} and {AotAuditHandler.Count}");
             return 1;
         }
 
@@ -78,6 +79,17 @@ public sealed class AotNumbersHandler : IStreamRequestHandler<AotNumbers, int>
 public sealed record AotEvent(string Payload) : INotification;
 
 public sealed class AotEventHandler : INotificationHandler<AotEvent>
+{
+    public static int Count { get; private set; }
+
+    public ValueTask HandleAsync(AotEvent notification, CancellationToken cancellationToken)
+    {
+        Count++;
+        return ValueTask.CompletedTask;
+    }
+}
+
+public sealed class AotAuditHandler : INotificationHandler<AotEvent>
 {
     public static int Count { get; private set; }
 

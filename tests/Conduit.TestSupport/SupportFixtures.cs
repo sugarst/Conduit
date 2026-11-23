@@ -110,6 +110,14 @@ public sealed class SupportScopedDependency
     public Guid Id { get; } = Guid.NewGuid();
 }
 
+public sealed record OpenGenericQuery<T>(T Value) : IQuery<T> where T : struct;
+
+public sealed class OpenGenericQueryHandler<T> : IRequestHandler<OpenGenericQuery<T>, T> where T : struct
+{
+    public ValueTask<T> HandleAsync(OpenGenericQuery<T> request, CancellationToken cancellationToken)
+        => ValueTask.FromResult(request.Value);
+}
+
 public sealed record LifetimeQuery : IQuery<Guid>;
 
 public sealed class LifetimeQueryHandler(SupportScopedDependency dependency) : IRequestHandler<LifetimeQuery, Guid>

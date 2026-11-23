@@ -1,3 +1,4 @@
+using System.Diagnostics.CodeAnalysis;
 using System.Reflection;
 using Conduit.Abstractions;
 using Conduit.Core;
@@ -23,16 +24,24 @@ public sealed class ConduitConfiguration
     public Func<Type, bool> TypeEvaluator { get; set; } = static _ => true;
 
     /// <summary>调度器实现类型。</summary>
+    [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicConstructors)]
     public Type DispatcherImplementationType { get; set; } = typeof(ConduitDispatcher);
 
     /// <summary>通知发布器实例。未设置 <see cref="NotificationPublisherType"/> 时生效。</summary>
     public INotificationPublisher NotificationPublisher { get; set; } = SequentialPublisher.Instance;
 
     /// <summary>通知发布器类型；优先于 <see cref="NotificationPublisher"/> 实例。</summary>
+    [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicConstructors)]
     public Type? NotificationPublisherType { get; set; }
 
     /// <summary>Handler 与调度器的统一生命周期（默认 Transient）。</summary>
-    public ServiceLifetime Lifetime { get; set; } = ServiceLifetime.Transient;
+    public ServiceLifetime Lifetime
+    {
+        get => ConfiguredLifetime ?? ServiceLifetime.Transient;
+        set => ConfiguredLifetime = value;
+    }
+
+    internal ServiceLifetime? ConfiguredLifetime { get; private set; }
 
     /// <summary>异常动作作用范围策略。</summary>
     public ExceptionActionStrategy ExceptionActionStrategy { get; set; } = ExceptionActionStrategy.ApplyForUnhandledExceptions;
@@ -43,7 +52,8 @@ public sealed class ConduitConfiguration
     /// <summary>是否自动注册扫描到的前 / 后处理器（默认 false，须显式注册）。</summary>
     public bool AutoRegisterRequestProcessors { get; set; }
 
-    /// <summary>是否自动注册开放泛型 Handler（默认 false，opt-in）。</summary>
+    /// <summary>是否在程序集扫描时自动注册开放泛型 Handler（默认 false）。</summary>
+    /// <remarks>候选实参来自扫描结果与已登记的闭合请求。其他实参可通过 <see cref="Register"/> 显式登记。</remarks>
     public bool RegisterGenericHandlers { get; set; }
 
     /// <summary>单个泛型类型的最大类型参数数；0 表示禁用该限制。</summary>

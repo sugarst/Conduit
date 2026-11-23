@@ -6,6 +6,8 @@ using Conduit.Contracts;
 using Conduit.Core.Dispatch;
 using Conduit.Core.Internal;
 using Conduit.Core.Publishing;
+using NotificationRoutes = System.Collections.Generic.IReadOnlyDictionary<System.Type,
+    System.Func<Conduit.Abstractions.IDispatcher, Conduit.Contracts.INotification, System.Threading.CancellationToken, System.Threading.Tasks.ValueTask>>;
 
 namespace Conduit.Core;
 
@@ -90,6 +92,14 @@ public sealed class ConduitDispatcher : IDispatcher
         where TNotification : INotification
     {
         ArgumentNullException.ThrowIfNull(notification);
+
+        var notificationType = notification.GetType();
+        if (notificationType != typeof(TNotification)
+            && _serviceProvider.Resolve<NotificationRoutes>() is { } routes
+            && routes.TryGetValue(notificationType, out var dispatch))
+        {
+            return dispatch(this, notification, cancellationToken);
+        }
 
         var handlers = _serviceProvider.ResolveAll<INotificationHandler<TNotification>>();
         if (handlers.Count == 0)

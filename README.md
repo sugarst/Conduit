@@ -278,7 +278,7 @@ services.AddConduit(cfg =>
 | 模式 | 机制 | 适用 | 入口 |
 | --- | --- | --- | --- |
 | **Mode A** | 启动期反射扫描一次，构建冻结调度表 | 常规 JIT 宿主 | `services.AddConduit(cfg => cfg.RegisterFrom(...))` |
-| **Mode B** | 增量源生成器编译期产出调度表，零反射 | Native AOT / 冷启动敏感 | `services.AddGeneratedConduit(cfg => ...)` |
+| **Mode B** | 增量源生成器在编译期生成处理器清单和调度入口 | Native AOT / 冷启动敏感 | `services.AddGeneratedConduit(cfg => ...)` |
 
 Mode B 无需额外引用生成器（主包已带 analyzers 资产），只需换入口：
 
@@ -287,12 +287,14 @@ using Conduit.Generated;   // AddGeneratedConduit 的命名空间
 
 services.AddGeneratedConduit(cfg =>
 {
-    // Behavior、发布器、护栏等配置照旧生效
+    // JIT 宿主可继续配置 Behavior 等扩展
     cfg.AddOpenBehavior(typeof(TelemetryBehavior<,>));
 });
 ```
 
-生成器会给"缺 Handler"等问题报 `CDI001/002/003` 诊断。两种模式的运行期语义完全一致：同一个 `ConduitDispatcher`、同一套 Behavior 语义、同一套诊断。
+生成器会给缺少 Handler 等问题生成编译诊断。两种模式在 JIT 中共用 `ConduitDispatcher` 和 Behavior 管线。
+
+Native AOT 使用源生成的静态注册，支持请求、流式请求和通知。当前 Behavior、请求前后处理器、异常策略以及通知处理器作用域隔离仍使用 JIT 的运行时注册路径。
 
 ### 可观测性
 

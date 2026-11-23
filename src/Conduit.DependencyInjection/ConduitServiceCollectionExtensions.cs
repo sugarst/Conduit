@@ -1,10 +1,11 @@
+using System.Diagnostics.CodeAnalysis;
 using Conduit.Core.Dispatch;
 using Microsoft.Extensions.DependencyInjection;
 
 namespace Conduit.DependencyInjection;
 
 /// <summary>
-/// 源生成器产出的注册清单。Mode B 用它替代反射扫描，同时保持与 Mode A 完全一致的行为语义。
+/// 源生成器产出的注册清单。Mode B 用它替代启动期的程序集扫描。
 /// </summary>
 public sealed class GeneratedRegistration
 {
@@ -24,6 +25,8 @@ public sealed class GeneratedRegistration
 /// <summary>一条服务映射。</summary>
 public readonly record struct GeneratedServiceRegistration(
     Type ServiceType,
+    [property: DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicConstructors)]
+    [param: DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicConstructors)]
     Type ImplementationType,
     ServiceLifetime Lifetime);
 
@@ -56,11 +59,11 @@ public static class ConduitServiceCollectionExtensions
     }
 
     /// <summary>
-    /// 注册 Conduit（Mode B：使用源生成器产出的调度表，零反射）。
+    /// 注册 Conduit（Mode B：使用源生成器产出的调度表与注册清单）。
     /// </summary>
     /// <param name="services">服务集合。</param>
     /// <param name="registration">生成器产出的注册清单。</param>
-    /// <param name="configure">配置回调（行为、发布器、护栏等仍然生效）。</param>
+    /// <param name="configure">配置回调。需要运行时构造注册的扩展使用 JIT 路径。</param>
     public static IServiceCollection AddConduit(
         this IServiceCollection services,
         GeneratedRegistration registration,

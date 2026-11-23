@@ -80,6 +80,28 @@ public class DependencyInjectionTests
     }
 
     [Test]
+    public async Task Open_generic_request_handler_is_closed_and_dispatched_when_enabled()
+    {
+        await using var provider = Build(cfg => cfg.RegisterGenericHandlers = true);
+        var dispatcher = provider.GetRequiredService<IDispatcher>();
+
+        var response = await dispatcher.SendAsync(new OpenGenericQuery<int>(42));
+
+        await Assert.That(response).IsEqualTo(42);
+    }
+
+    [Test]
+    public async Task Open_generic_request_handler_requires_opt_in()
+    {
+        await using var provider = Build();
+        var dispatcher = provider.GetRequiredService<IDispatcher>();
+
+        var exception = await ExceptionCapture.CaptureAsync(() => dispatcher.SendAsync(new OpenGenericQuery<int>(42)));
+
+        await Assert.That(exception).IsTypeOf<HandlerNotFoundException>();
+    }
+
+    [Test]
     public async Task CloseInContainer_strategy_registers_open_generic_behavior()
     {
         await using var provider = Build(cfg =>

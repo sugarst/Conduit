@@ -11,7 +11,7 @@
 //   · TFM 合规：除源生成器（Roslyn 宿主约束）外只允许 net10.0
 //   · --packages：校验 nupkg 依赖声明与 lib / analyzers 资产布局
 //
-// 用法:
+// 用法（先还原项目依赖）:
 //   dotnet run scripts/check_compliance.cs [-- --packages] [--root <repo>]
 //
 // 退出码: 0 = 通过, 1 = 违规, 2 = 运行环境异常
@@ -19,6 +19,7 @@
 using System.Diagnostics;
 using System.IO.Compression;
 using System.Text;
+using System.Text.Json;
 using System.Xml.Linq;
 
 var exitCode = ComplianceRunner.Run(args);
@@ -80,10 +81,22 @@ internal static class ComplianceRunner
             return 2;
         }
 
+        Dictionary<string, HashSet<string>> productDependencies;
+        Dictionary<string, HashSet<string>> testDependencies;
+        try
+        {
+            productDependencies = CollectDependencies(EnumerateProjects("src", excludeSourceGenerator: true));
+            testDependencies = CollectDependencies(EnumerateProjects("tests", excludeSourceGenerator: false));
+        }
+        catch (InvalidOperationException exception)
+        {
+            Console.Error.WriteLine($"[compliance] 无法读取 NuGet 依赖图。{exception.Message}");
+            return 2;
+        }
+
         Section("红线 #1：不得引用对标库（含传递依赖）");
         CheckReferenceLibraryTraces();
 
-        var productDependencies = CollectDependencies(EnumerateProjects("src", excludeSourceGenerator: true));
         CheckProductDependencyGraph(productDependencies);
 
         Section("契约包零依赖");
@@ -93,7 +106,7 @@ internal static class ComplianceRunner
         CheckNoPolyfill(productDependencies);
 
         Section("测试栈红线（仅测试项目）");
-        CheckTestStack(CollectDependencies(EnumerateProjects("tests", excludeSourceGenerator: false)));
+        CheckTestStack(testDependencies);
 
         Section("TFM 合规：除源生成器外只允许 net10.0");
         CheckTargetFrameworks();
@@ -161,10 +174,10 @@ internal static class ComplianceRunner
         Report(hits.Count == 0, "源码无对标库痕迹（架构断言文件除外）", $"源码出现对标库痕迹：{string.Join(", ", hits)}");
     }
 
-    private static void CheckProductDependencyGraph(Dictionary<string, string> productDependencies)
+    private static void CheckProductDependencyGraph(Dictionary<string, HashSet<string>> productDependencies)
     {
         var mediatrHits = productDependencies
-            .Where(pair => ContainsPackage(pair.Value, "MediatR"))
+            .Where(pair => pair.Value.Contains("MediatR"))
             .Select(pair => pair.Key)
             .ToArray();
 
@@ -174,7 +187,7 @@ internal static class ComplianceRunner
             $"产品依赖图出现对标库包：{string.Join(", ", mediatrHits)}");
     }
 
-    private static void CheckContractsHasNoDependency(Dictionary<string, string> productDependencies)
+    private static void CheckContractsHasNoDependency(Dictionary<string, HashSet<string>> productDependencies)
     {
         var contracts = productDependencies
             .FirstOrDefault(pair => Path.GetFileName(pair.Key) == "Conduit.Contracts.csproj");
@@ -186,20 +199,20 @@ internal static class ComplianceRunner
         }
 
         Report(
-            contracts.Value.Contains("No packages were found", StringComparison.OrdinalIgnoreCase),
+            contracts.Value.Count == 0,
             "Conduit.Contracts 依赖列表为空",
             "Conduit.Contracts 存在包依赖");
     }
 
-    private static void CheckNoPolyfill(Dictionary<string, string> productDependencies)
+    private static void CheckNoPolyfill(Dictionary<string, HashSet<string>> productDependencies)
     {
         var offenders = new List<string>();
 
         foreach (var package in PolyfillPackages)
         {
-            foreach (var (project, output) in productDependencies)
+            foreach (var (project, dependencies) in productDependencies)
             {
-                if (ContainsPackage(output, package))
+                if (dependencies.Contains(package))
                 {
                     offenders.Add($"{Path.GetFileName(project)} -> {package}");
                 }
@@ -209,15 +222,15 @@ internal static class ComplianceRunner
         Report(offenders.Count == 0, "产品依赖图无 polyfill 包", $"产品依赖图出现 polyfill 包：{string.Join(", ", offenders)}");
     }
 
-    private static void CheckTestStack(Dictionary<string, string> testDependencies)
+    private static void CheckTestStack(Dictionary<string, HashSet<string>> testDependencies)
     {
         var offenders = new List<string>();
 
         foreach (var package in ForbiddenTestPackages)
         {
-            foreach (var (project, output) in testDependencies)
+            foreach (var (project, dependencies) in testDependencies)
             {
-                if (ContainsPackage(output, package))
+                if (dependencies.Contains(package))
                 {
                     offenders.Add($"{Path.GetFileName(project)} -> {package}");
                 }
@@ -226,7 +239,7 @@ internal static class ComplianceRunner
 
         Report(offenders.Count == 0, "测试项目无禁用包", $"测试项目出现禁用包：{string.Join(", ", offenders)}");
 
-        var usesTunit = testDependencies.Values.Any(output => ContainsPackage(output, "TUnit"));
+        var usesTunit = testDependencies.Values.Any(dependencies => dependencies.Contains("TUnit"));
         Report(usesTunit, "测试栈为 TUnit / Microsoft.Testing.Platform", "未检测到 TUnit");
     }
 
@@ -340,19 +353,56 @@ internal static class ComplianceRunner
 
     // ---------------------------------------------------------------- 基础设施
 
-    private static Dictionary<string, string> CollectDependencies(string[] projects)
+    private static Dictionary<string, HashSet<string>> CollectDependencies(string[] projects)
     {
-        var results = new System.Collections.Concurrent.ConcurrentDictionary<string, string>(StringComparer.Ordinal);
+        var results = new Dictionary<string, HashSet<string>>(StringComparer.Ordinal);
 
-        Parallel.ForEach(projects, project =>
+        foreach (var project in projects)
         {
-            var (_, output) = RunDotnet("list", project, "package", "--include-transitive");
-            results[project] = output;
-        });
+            var relativePath = Path.GetRelativePath(root, project);
+            var (exitCode, output, error) = RunDotnet("package", "list", "--project", project,
+                "--include-transitive", "--no-restore", "--format", "json", "--output-version", "1");
+            if (exitCode != 0)
+            {
+                var diagnostic = string.IsNullOrWhiteSpace(error) ? output.Trim() : error.Trim();
+                throw new InvalidOperationException(
+                    $"{relativePath}（dotnet package list 退出码 {exitCode}）。请确认项目依赖已还原。{Environment.NewLine}{diagnostic}");
+            }
 
-        return results
-            .OrderBy(pair => pair.Key, StringComparer.Ordinal)
-            .ToDictionary(pair => pair.Key, pair => pair.Value, StringComparer.Ordinal);
+            try
+            {
+                using var report = JsonDocument.Parse(output);
+                var frameworks = report.RootElement.GetProperty("projects").EnumerateArray().Single().GetProperty("frameworks");
+                if (frameworks.GetArrayLength() == 0)
+                {
+                    throw new JsonException("报告中没有目标框架。");
+                }
+
+                var dependencies = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+                foreach (var framework in frameworks.EnumerateArray())
+                {
+                    foreach (var groupName in new[] { "topLevelPackages", "transitivePackages" })
+                    {
+                        if (framework.TryGetProperty(groupName, out var group))
+                        {
+                            foreach (var package in group.EnumerateArray())
+                            {
+                                dependencies.Add(package.GetProperty("id").GetString()
+                                    ?? throw new JsonException("依赖缺少包 ID。"));
+                            }
+                        }
+                    }
+                }
+
+                results.Add(project, dependencies);
+            }
+            catch (Exception exception) when (exception is JsonException or InvalidOperationException or KeyNotFoundException)
+            {
+                throw new InvalidOperationException($"{relativePath} 的 NuGet JSON 报告无效。{exception.Message}", exception);
+            }
+        }
+
+        return results;
     }
 
     private static string[] EnumerateProjects(string directory, bool excludeSourceGenerator)
@@ -377,15 +427,7 @@ internal static class ComplianceRunner
             || path.Contains($"{separator}obj{separator}", StringComparison.Ordinal);
     }
 
-    private static bool ContainsPackage(string listOutput, string packageId)
-    {
-        // dotnet list 的包名以 "> " 前缀出现在 "Transitive" / "Top-level" 表格行中
-        return listOutput.Contains($"> {packageId} ", StringComparison.Ordinal)
-            || listOutput.Contains($"> {packageId}\r", StringComparison.Ordinal)
-            || listOutput.Contains($"> {packageId}\n", StringComparison.Ordinal);
-    }
-
-    private static (int ExitCode, string Output) RunDotnet(params string[] arguments)
+    private static (int ExitCode, string Output, string Error) RunDotnet(params string[] arguments)
     {
         var startInfo = new ProcessStartInfo("dotnet")
         {
@@ -411,10 +453,7 @@ internal static class ComplianceRunner
         var errorTask = process.StandardError.ReadToEndAsync();
         process.WaitForExit();
 
-        var output = outputTask.GetAwaiter().GetResult();
-        _ = errorTask.GetAwaiter().GetResult();
-
-        return (process.ExitCode, output);
+        return (process.ExitCode, outputTask.GetAwaiter().GetResult(), errorTask.GetAwaiter().GetResult());
     }
 
     private static string? FindPackage(string artifacts, string packageId)
@@ -523,6 +562,7 @@ internal static class ComplianceRunner
           --root <path> 仓库根目录，默认从当前目录向上查找 Conduit.slnx
           --help, -h    显示本帮助
 
+        依赖检查读取已还原的项目图。请先还原或构建项目。
         退出码: 0 通过 / 1 违规 / 2 运行环境异常
         """);
 }

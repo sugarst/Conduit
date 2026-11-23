@@ -18,11 +18,10 @@ public sealed class ConduitGenerator : IIncrementalGenerator
         var handlers = context.SyntaxProvider
             .CreateSyntaxProvider(
                 static (node, _) => node is TypeDeclarationSyntax { BaseList: not null },
-                static (ctx, _) => SymbolFacts.CreateHandler(ctx))
-            .Where(static model => model is not null)
-            .Select(static (model, _) => model!)
+                static (ctx, _) => SymbolFacts.CreateHandlers(ctx))
+            .SelectMany(static (models, _) => models)
             .Collect()
-            .Select(static (models, _) => new EquatableList<HandlerModel>(models.ToArray()));
+            .Select(static (models, _) => new EquatableList<HandlerModel>(models.Distinct().ToArray()));
 
         var requests = context.SyntaxProvider
             .CreateSyntaxProvider(
@@ -197,7 +196,7 @@ internal static class Emitter
         builder.AppendLine("        }");
         builder.AppendLine("    }");
         builder.AppendLine();
-        AppendExtension(builder);
+        AppendExtension(builder, handlers);
         builder.AppendLine("}");
 
         return builder.ToString();
@@ -227,6 +226,10 @@ internal static class Emitter
                     $"global::Conduit.Abstractions.IRequestExceptionHandler<{handler.RequestType}, {handler.ResponseType}, {handler.ExceptionType}>",
                 HandlerKind.ExceptionAction =>
                     $"global::Conduit.Abstractions.IRequestExceptionAction<{handler.RequestType}, {handler.ExceptionType}>",
+                HandlerKind.PreProcessor =>
+                    $"global::Conduit.Abstractions.IRequestPreProcessor<{handler.RequestType}>",
+                HandlerKind.PostProcessor =>
+                    $"global::Conduit.Abstractions.IRequestPostProcessor<{handler.RequestType}, {handler.ResponseType}>",
                 _ => null,
             };
 
@@ -284,7 +287,36 @@ internal static class Emitter
         builder.AppendLine("                },");
     }
 
-    private static void AppendExtension(StringBuilder builder)
+    private static void AppendNotificationRoutes(StringBuilder builder, HandlerModel[] handlers)
+    {
+        var notifications = handlers.Where(static handler => handler.Kind == HandlerKind.Notification)
+            .Select(static handler => handler.RequestType)
+            .Distinct()
+            .ToArray();
+        if (notifications.Length == 0)
+        {
+            return;
+        }
+
+        const string keyAndValue = "global::System.Type, global::System.Func<global::Conduit.Abstractions.IDispatcher, "
+            + "global::Conduit.Contracts.INotification, global::System.Threading.CancellationToken, global::System.Threading.Tasks.ValueTask>";
+        builder.Append("            var routes = new global::System.Collections.Generic.Dictionary<")
+            .Append(keyAndValue).AppendLine(">");
+        builder.AppendLine("            {");
+        foreach (var notification in notifications)
+        {
+            builder.Append("                [typeof(").Append(notification)
+                .Append(")] = static (dispatcher, notification, ct) => dispatcher.PublishAsync((")
+                .Append(notification).AppendLine(")notification, ct),");
+        }
+
+        builder.AppendLine("            };");
+        builder.Append("            services.Add(global::Microsoft.Extensions.DependencyInjection.ServiceDescriptor.Singleton(typeof(")
+            .Append("global::System.Collections.Generic.IReadOnlyDictionary<").Append(keyAndValue)
+            .AppendLine(">), routes));");
+    }
+
+    private static void AppendExtension(StringBuilder builder, HandlerModel[] handlers)
     {
         builder.AppendLine("    public static class ConduitGeneratedServiceCollectionExtensions");
         builder.AppendLine("    {");
@@ -293,6 +325,7 @@ internal static class Emitter
         builder.AppendLine("            global::System.Action<global::Conduit.DependencyInjection.ConduitConfiguration>? configure = null)");
         builder.AppendLine("        {");
         builder.AppendLine("            global::System.ArgumentNullException.ThrowIfNull(services);");
+        AppendNotificationRoutes(builder, handlers);
         builder.AppendLine("            return global::Conduit.DependencyInjection.ConduitServiceCollectionExtensions.AddConduit(");
         builder.AppendLine("                services, ConduitGeneratedRegistration.Create(), configure);");
         builder.AppendLine("        }");

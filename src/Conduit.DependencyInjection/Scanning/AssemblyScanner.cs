@@ -22,8 +22,7 @@ internal sealed class ScanResult
     public List<(Type Request, Type Response)> StreamPairs { get; } = [];
     public List<ExceptionHandlerMapping> ExceptionHandlers { get; } = [];
     public List<ExceptionActionMapping> ExceptionActions { get; } = [];
-    public List<(Type Request, Type Implementation)> PreProcessors { get; } = [];
-    public List<(Type Request, Type Response, Type Implementation)> PostProcessors { get; } = [];
+    public List<(Type ServiceType, Type ImplementationType)> Processors { get; } = [];
     public List<(Type ServiceType, Type Implementation)> Validators { get; } = [];
     public List<string> Notes { get; } = [];
 
@@ -46,21 +45,39 @@ internal sealed class AssemblyScanner(ConduitConfiguration configuration, Regist
 
     private readonly ScanResult _result = new();
     private readonly Dictionary<Type, Type> _handlerServiceTypes = [];
+    private readonly List<Type> _openHandlers = [];
+    private readonly HashSet<Type> _containerClosedNotifications = [];
 
     public ScanResult Scan()
     {
+        var candidates = new HashSet<Type>();
         foreach (var assembly in configuration.Assemblies)
         {
             guard.CheckTimeout();
             foreach (var type in SafeGetTypes(assembly))
             {
                 Inspect(type);
+                if (configuration.RegisterGenericHandlers && !type.IsAbstract && (type.IsClass || type.IsValueType))
+                {
+                    AddCandidate(candidates, type);
+                }
             }
         }
 
         foreach (var (requestType, handlerType) in configuration.ExplicitHandlers)
         {
             InspectExplicitPair(requestType, handlerType);
+        }
+
+        if (_openHandlers.Count > 0)
+        {
+            foreach (var (request, response) in _result.RequestPairs.Concat(_result.StreamPairs))
+            {
+                AddCandidate(candidates, request);
+                AddCandidate(candidates, response);
+            }
+
+            CloseGenericHandlers(candidates);
         }
 
         return _result;
@@ -126,13 +143,10 @@ internal sealed class AssemblyScanner(ConduitConfiguration configuration, Regist
             {
                 _result.ExceptionActions.Add(new ExceptionActionMapping(arguments[0], arguments[1], type));
             }
-            else if (definition == PreProcessorOpen && configuration.AutoRegisterRequestProcessors)
+            else if (configuration.AutoRegisterRequestProcessors
+                && (definition == PreProcessorOpen || definition == PostProcessorOpen))
             {
-                _result.PreProcessors.Add((arguments[0], type));
-            }
-            else if (definition == PostProcessorOpen && configuration.AutoRegisterRequestProcessors)
-            {
-                _result.PostProcessors.Add((arguments[0], arguments[1], type));
+                _result.Processors.Add((@interface, type));
             }
             else if (definition == ValidatorOpen)
             {
@@ -181,35 +195,91 @@ internal sealed class AssemblyScanner(ConduitConfiguration configuration, Regist
 
     private void InspectOpenGenericHandler(Type type)
     {
-        if (!configuration.RegisterGenericHandlers || !type.IsGenericTypeDefinition)
+        if (!configuration.RegisterGenericHandlers || !type.IsGenericTypeDefinition || !configuration.TypeEvaluator(type))
         {
             return;
         }
 
-        if (!configuration.TypeEvaluator(type))
+        var parameters = type.GetGenericArguments();
+        var requiresClosing = false;
+        foreach (var serviceType in type.GetInterfaces())
         {
-            return;
-        }
-
-        guard.AddTypeParameters(type.GetGenericArguments().Length);
-
-        foreach (var @interface in type.GetInterfaces())
-        {
-            if (!@interface.IsGenericType)
+            if (!serviceType.IsGenericType)
             {
                 continue;
             }
 
-            var definition = @interface.GetGenericTypeDefinition();
-            if (definition == RequestHandlerOpen || definition == StreamHandlerOpen || definition == NotificationHandlerOpen)
+            var definition = serviceType.GetGenericTypeDefinition();
+            if (definition == NotificationHandlerOpen && serviceType.GetGenericArguments().SequenceEqual(parameters))
             {
+                guard.AddTypeParameters(parameters.Length);
                 guard.IncrementRegistrations();
                 _result.Handlers.Add(new ServiceMapping(definition, type, true));
-                _result.Notes.Add(
-                    $"Open generic handler '{type.FullName}' registered as open generic; "
-                    + "its request types are closed by the container and are not part of the dispatch table. "
-                    + "Use cfg.Register(closedRequestType, closedHandlerType) for table-driven dispatch.");
+                _containerClosedNotifications.Add(type);
             }
+            else if (definition == RequestHandlerOpen || definition == StreamHandlerOpen || definition == NotificationHandlerOpen)
+            {
+                requiresClosing = true;
+            }
+        }
+
+        if (requiresClosing)
+        {
+            guard.AddTypeParameters(parameters.Length);
+            _openHandlers.Add(type);
+        }
+    }
+
+    private void CloseGenericHandlers(HashSet<Type> candidates)
+    {
+        foreach (var openHandler in _openHandlers)
+        {
+            foreach (var handler in GenericHandlerCloser.Close(openHandler, candidates, guard))
+            {
+                foreach (var serviceType in handler.GetInterfaces())
+                {
+                    if (!serviceType.IsGenericType)
+                    {
+                        continue;
+                    }
+
+                    var definition = serviceType.GetGenericTypeDefinition();
+                    var arguments = serviceType.GetGenericArguments();
+                    if (definition == NotificationHandlerOpen && !_containerClosedNotifications.Contains(openHandler))
+                    {
+                        RegisterNotificationHandler(serviceType, arguments[0], handler);
+                    }
+                    else if (definition == RequestHandlerOpen || definition == StreamHandlerOpen)
+                    {
+                        if (_handlerServiceTypes.TryGetValue(serviceType, out var existing) && existing == handler)
+                        {
+                            continue;
+                        }
+
+                        if (definition == RequestHandlerOpen)
+                        {
+                            RegisterHandler(serviceType, arguments[0], arguments[1], handler);
+                        }
+                        else
+                        {
+                            RegisterStreamHandler(serviceType, arguments[0], arguments[1], handler);
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    private static void AddCandidate(HashSet<Type> candidates, Type type)
+    {
+        if (type.ContainsGenericParameters || type.IsByRefLike || !candidates.Add(type))
+        {
+            return;
+        }
+
+        foreach (var argument in type.GetGenericArguments())
+        {
+            AddCandidate(candidates, argument);
         }
     }
 

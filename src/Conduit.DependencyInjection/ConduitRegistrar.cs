@@ -1,4 +1,6 @@
 using System.Collections.Frozen;
+using System.Diagnostics.CodeAnalysis;
+using System.Runtime.CompilerServices;
 using Conduit.Abstractions;
 using Conduit.Contracts;
 using Conduit.Core;
@@ -25,27 +27,14 @@ internal static class ConduitRegistrar
 
         ValidateConfiguration(services, configuration, failures);
 
-        ScanResult? scan = null;
-        if (generated is null)
+        if (RuntimeFeature.IsDynamicCodeSupported)
         {
-            scan = new AssemblyScanner(configuration, guard).Scan();
-            RegisterScannedServices(services, configuration, scan, failures);
+            RegisterDynamicServices(services, configuration, generated, guard, failures);
         }
         else
         {
-            RegisterGeneratedServices(services, configuration, generated);
+            RegisterStaticServices(services, configuration, generated);
         }
-
-        var processors = RegisterProcessors(services, configuration, scan);
-
-        var tables = generated?.Tables ?? BuildTables(scan!, guard);
-        services.AddSingleton(tables);
-
-        RegisterExceptionDispatch(services, configuration, scan, generated);
-
-        RegisterProcessorRunners(services, configuration, tables, processors);
-
-        RegisterBehaviors(services, configuration, tables, guard, failures);
 
         RegisterPublisher(services, configuration, failures);
 
@@ -58,6 +47,59 @@ internal static class ConduitRegistrar
         {
             throw new ConduitStartupValidationException([.. failures]);
         }
+    }
+
+    private static void RegisterDynamicServices(
+        IServiceCollection services,
+        ConduitConfiguration configuration,
+        GeneratedRegistration? generated,
+        RegistrationGuard guard,
+        List<string> failures)
+    {
+        ScanResult? scan = null;
+        if (generated is null)
+        {
+            scan = new AssemblyScanner(configuration, guard).Scan();
+            RegisterScannedServices(services, configuration, scan);
+        }
+        else
+        {
+            RegisterGeneratedServices(services, configuration, generated);
+        }
+
+        NotificationRouteRegistration.Register(services);
+        var processors = RegisterProcessors(services, configuration, scan, generated);
+
+        var tables = generated?.Tables ?? BuildTables(scan!, guard);
+        services.AddSingleton(tables);
+
+        RegisterExceptionDispatch(services, configuration, tables, scan, generated);
+
+        RegisterProcessorRunners(services, configuration, tables, processors);
+
+        RegisterBehaviors(services, configuration, tables, guard, failures);
+    }
+
+    private static void RegisterStaticServices(
+        IServiceCollection services, ConduitConfiguration configuration, GeneratedRegistration? generated)
+    {
+        if (generated is null)
+        {
+            throw new PlatformNotSupportedException("Assembly scanning requires dynamic code. Use AddGeneratedConduit for Native AOT.");
+        }
+
+        if (configuration.Behaviors.Count > 0 || configuration.StreamBehaviors.Count > 0
+            || configuration.PreProcessors.Count > 0 || configuration.PostProcessors.Count > 0
+            || (configuration.AutoRegisterRequestProcessors && generated.Services.Any(mapping => IsProcessorService(mapping.ServiceType)))
+            || generated.ExceptionHandlers.Count > 0 || generated.ExceptionActions.Count > 0)
+        {
+            throw new PlatformNotSupportedException(
+                "Pipeline behaviors, request processors, and exception policies require runtime construction of registrations "
+                + "and are not supported by the current Native AOT registration path.");
+        }
+
+        RegisterGeneratedServices(services, configuration, generated);
+        services.AddSingleton(generated.Tables);
     }
 
     // ————————————————————————— 校验 —————————————————————————
@@ -115,7 +157,8 @@ internal static class ConduitRegistrar
         }
     }
 
-    private static bool HasDispatchTablesConstructor(Type dispatcherType)
+    private static bool HasDispatchTablesConstructor(
+        [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicConstructors)] Type dispatcherType)
         => dispatcherType.GetConstructors()
             .Any(ctor => ctor.GetParameters() is [{ ParameterType: var first }, ..]
                          && first == typeof(DispatchTables));
@@ -130,34 +173,27 @@ internal static class ConduitRegistrar
     private static void RegisterScannedServices(
         IServiceCollection services,
         ConduitConfiguration configuration,
-        ScanResult scan,
-        List<string> failures)
+        ScanResult scan)
     {
         foreach (var mapping in scan.Handlers)
         {
-            services.TryAdd(new ServiceDescriptor(mapping.ServiceType, mapping.ImplementationType, configuration.Lifetime));
+            var descriptor = new ServiceDescriptor(mapping.ServiceType, mapping.ImplementationType, configuration.Lifetime);
+            if (mapping.IsOpenGeneric)
+            {
+                services.TryAddEnumerable(descriptor);
+            }
+            else
+            {
+                services.TryAdd(descriptor);
+            }
         }
 
         var isolateScopes = ShouldIsolateNotificationScopes(configuration);
 
         foreach (var mapping in scan.NotificationHandlers)
         {
-            if (isolateScopes)
-            {
-                var notificationType = mapping.ServiceType.GetGenericArguments()[0];
-                var wrapperType = typeof(ScopedNotificationHandler<,>)
-                    .MakeGenericType(mapping.ImplementationType, notificationType);
-
-                // 包装器在独立作用域内按实现类型解析，因此实现类型自身也必须可解析
-                services.TryAdd(new ServiceDescriptor(
-                    mapping.ImplementationType, mapping.ImplementationType, configuration.Lifetime));
-
-                services.Add(new ServiceDescriptor(mapping.ServiceType, wrapperType, configuration.Lifetime));
-            }
-            else
-            {
-                services.Add(new ServiceDescriptor(mapping.ServiceType, mapping.ImplementationType, configuration.Lifetime));
-            }
+            RegisterNotificationHandler(services, mapping.ServiceType, mapping.ImplementationType,
+                configuration.Lifetime, isolateScopes);
         }
 
         foreach (var mapping in scan.ExceptionHandlers)
@@ -165,7 +201,7 @@ internal static class ConduitRegistrar
             var serviceType = typeof(IRequestExceptionHandler<,,>)
                 .MakeGenericType(mapping.RequestType, mapping.ResponseType, mapping.ExceptionType);
 
-            services.TryAdd(new ServiceDescriptor(serviceType, mapping.ImplementationType, configuration.Lifetime));
+            services.TryAddEnumerable(new ServiceDescriptor(serviceType, mapping.ImplementationType, configuration.Lifetime));
         }
 
         foreach (var mapping in scan.ExceptionActions)
@@ -173,7 +209,7 @@ internal static class ConduitRegistrar
             var serviceType = typeof(IRequestExceptionAction<,>)
                 .MakeGenericType(mapping.RequestType, mapping.ExceptionType);
 
-            services.TryAdd(new ServiceDescriptor(serviceType, mapping.ImplementationType, configuration.Lifetime));
+            services.TryAddEnumerable(new ServiceDescriptor(serviceType, mapping.ImplementationType, configuration.Lifetime));
         }
 
         foreach (var (serviceType, implementationType) in scan.Validators)
@@ -196,26 +232,52 @@ internal static class ConduitRegistrar
 
         foreach (var mapping in generated.Services)
         {
-            if (isolateScopes && IsNotificationHandlerService(mapping.ServiceType))
+            var definition = mapping.ServiceType.IsGenericType ? mapping.ServiceType.GetGenericTypeDefinition() : null;
+            if (definition == typeof(IRequestPreProcessor<>) || definition == typeof(IRequestPostProcessor<,>))
             {
-                var notificationType = mapping.ServiceType.GetGenericArguments()[0];
-                var wrapperType = typeof(ScopedNotificationHandler<,>)
-                    .MakeGenericType(mapping.ImplementationType, notificationType);
-
-                services.TryAdd(new ServiceDescriptor(
-                    mapping.ImplementationType, mapping.ImplementationType, mapping.Lifetime));
-
-                services.Add(new ServiceDescriptor(mapping.ServiceType, wrapperType, mapping.Lifetime));
                 continue;
             }
 
-            services.TryAdd(new ServiceDescriptor(mapping.ServiceType, mapping.ImplementationType, mapping.Lifetime));
+            var lifetime = configuration.ConfiguredLifetime ?? mapping.Lifetime;
+            if (definition == typeof(INotificationHandler<>) && isolateScopes)
+            {
+                if (!RuntimeFeature.IsDynamicCodeSupported)
+                {
+                    throw new PlatformNotSupportedException("Notification handler scope isolation requires runtime construction of registrations.");
+                }
+
+                RegisterNotificationHandler(services, mapping.ServiceType, mapping.ImplementationType, lifetime, isolateScopes);
+                continue;
+            }
+
+            var descriptor = new ServiceDescriptor(mapping.ServiceType, mapping.ImplementationType, lifetime);
+            if (definition == typeof(INotificationHandler<>)
+                || definition == typeof(IRequestExceptionHandler<,,>) || definition == typeof(IRequestExceptionAction<,>))
+            {
+                services.TryAddEnumerable(descriptor);
+            }
+            else
+            {
+                services.TryAdd(descriptor);
+            }
         }
     }
 
-    private static bool IsNotificationHandlerService(Type serviceType)
-        => serviceType.IsGenericType
-           && serviceType.GetGenericTypeDefinition() == typeof(INotificationHandler<>);
+    private static void RegisterNotificationHandler(
+        IServiceCollection services, Type serviceType, Type implementationType, ServiceLifetime lifetime, bool isolateScopes)
+    {
+        if (isolateScopes)
+        {
+            var notificationType = serviceType.GetGenericArguments()[0];
+            var wrapperType = typeof(ScopedNotificationHandler<,>).MakeGenericType(implementationType, notificationType);
+
+            // 包装器在独立作用域内按实现类型解析。
+            services.TryAdd(new ServiceDescriptor(implementationType, implementationType, lifetime));
+            implementationType = wrapperType;
+        }
+
+        services.TryAddEnumerable(new ServiceDescriptor(serviceType, implementationType, lifetime));
+    }
 
     private static bool ShouldIsolateNotificationScopes(ConduitConfiguration configuration)
     {
@@ -231,26 +293,44 @@ internal static class ConduitRegistrar
 
     // ————————————————————————— 处理器 —————————————————————————
 
+    private static bool IsProcessorService(Type serviceType)
+    {
+        var definition = serviceType.IsGenericType ? serviceType.GetGenericTypeDefinition() : null;
+        return definition == typeof(IRequestPreProcessor<>) || definition == typeof(IRequestPostProcessor<,>);
+    }
+
     private sealed record ProcessorRegistry(HashSet<Type> PreRequests, HashSet<(Type Request, Type Response)> PostPairs);
 
     private static ProcessorRegistry RegisterProcessors(
         IServiceCollection services,
         ConduitConfiguration configuration,
-        ScanResult? scan)
+        ScanResult? scan,
+        GeneratedRegistration? generated)
     {
-        var preRequests = new HashSet<Type>();
-        var postPairs = new HashSet<(Type, Type)>();
+        var registry = new ProcessorRegistry([], []);
 
-        void RegisterPre(Type implementationType)
+        void Register(Type serviceType, Type implementationType, ServiceLifetime lifetime)
+        {
+            services.Add(new ServiceDescriptor(serviceType, implementationType, lifetime));
+            var arguments = serviceType.GetGenericArguments();
+            if (serviceType.GetGenericTypeDefinition() == typeof(IRequestPreProcessor<>))
+            {
+                registry.PreRequests.Add(arguments[0]);
+            }
+            else
+            {
+                registry.PostPairs.Add((arguments[0], arguments[1]));
+            }
+        }
+
+        void RegisterExplicit(Type implementationType, Type definition)
         {
             var matched = false;
-            foreach (var @interface in implementationType.GetInterfaces())
+            foreach (var serviceType in implementationType.GetInterfaces())
             {
-                if (@interface.IsGenericType
-                    && @interface.GetGenericTypeDefinition() == typeof(IRequestPreProcessor<>))
+                if (serviceType.IsGenericType && serviceType.GetGenericTypeDefinition() == definition)
                 {
-                    services.Add(new ServiceDescriptor(@interface, implementationType, configuration.Lifetime));
-                    preRequests.Add(@interface.GetGenericArguments()[0]);
+                    Register(serviceType, implementationType, configuration.Lifetime);
                     matched = true;
                 }
             }
@@ -258,56 +338,43 @@ internal static class ConduitRegistrar
             if (!matched)
             {
                 throw new ConduitConfigurationException(
-                    $"Type '{implementationType.FullName}' does not implement IRequestPreProcessor<TRequest>.");
+                    $"Type '{implementationType.FullName}' does not implement '{definition.Name}'.");
             }
         }
 
-        void RegisterPost(Type implementationType)
+        if (configuration.AutoRegisterRequestProcessors)
         {
-            var matched = false;
-            foreach (var @interface in implementationType.GetInterfaces())
+            if (scan is not null)
             {
-                if (@interface.IsGenericType
-                    && @interface.GetGenericTypeDefinition() == typeof(IRequestPostProcessor<,>))
+                foreach (var (serviceType, implementationType) in scan.Processors)
                 {
-                    services.Add(new ServiceDescriptor(@interface, implementationType, configuration.Lifetime));
-                    var arguments = @interface.GetGenericArguments();
-                    postPairs.Add((arguments[0], arguments[1]));
-                    matched = true;
+                    Register(serviceType, implementationType, configuration.Lifetime);
                 }
             }
-
-            if (!matched)
+            else
             {
-                throw new ConduitConfigurationException(
-                    $"Type '{implementationType.FullName}' does not implement IRequestPostProcessor<TRequest, TResponse>.");
-            }
-        }
-
-        if (scan is not null && configuration.AutoRegisterRequestProcessors)
-        {
-            foreach (var (_, implementation) in scan.PreProcessors)
-            {
-                RegisterPre(implementation);
-            }
-
-            foreach (var (_, _, implementation) in scan.PostProcessors)
-            {
-                RegisterPost(implementation);
+                foreach (var mapping in generated!.Services)
+                {
+                    var definition = mapping.ServiceType.IsGenericType ? mapping.ServiceType.GetGenericTypeDefinition() : null;
+                    if (definition == typeof(IRequestPreProcessor<>) || definition == typeof(IRequestPostProcessor<,>))
+                    {
+                        Register(mapping.ServiceType, mapping.ImplementationType, configuration.ConfiguredLifetime ?? mapping.Lifetime);
+                    }
+                }
             }
         }
 
         foreach (var implementationType in configuration.PreProcessors)
         {
-            RegisterPre(implementationType);
+            RegisterExplicit(implementationType, typeof(IRequestPreProcessor<>));
         }
 
         foreach (var implementationType in configuration.PostProcessors)
         {
-            RegisterPost(implementationType);
+            RegisterExplicit(implementationType, typeof(IRequestPostProcessor<,>));
         }
 
-        return new ProcessorRegistry(preRequests, postPairs);
+        return registry;
     }
 
     private static void RegisterProcessorRunners(
@@ -371,6 +438,7 @@ internal static class ConduitRegistrar
     private static void RegisterExceptionDispatch(
         IServiceCollection services,
         ConduitConfiguration configuration,
+        DispatchTables tables,
         ScanResult? scan,
         GeneratedRegistration? generated)
     {
@@ -393,14 +461,9 @@ internal static class ConduitRegistrar
 
         foreach (var requestType in requestTypes)
         {
-            var responseType = handlers
-                .FirstOrDefault(h => h.Request == requestType, (null!, null!, null!)).Response;
-
-            if (responseType is null)
-            {
-                // 只有动作没有映射：动作仍需执行，响应类型取 Unit 语义即可
-                responseType = typeof(Unit);
-            }
+            var responseType = tables.Requests.TryGetValue(requestType, out var entry)
+                ? entry.ResponseType
+                : handlers.FirstOrDefault(h => h.Request == requestType).Response ?? typeof(Unit);
 
             var invokers = handlers
                 .Where(h => h.Request == requestType && h.Response == responseType)
@@ -553,10 +616,14 @@ internal static class ConduitRegistrar
             return;
         }
 
-        services.Add(new ServiceDescriptor(
-            typeof(IDispatcher),
-            provider => (IDispatcher)ActivatorUtilities.CreateInstance(provider, dispatcherType),
-            configuration.Lifetime));
+        if (RuntimeFeature.IsDynamicCodeSupported)
+        {
+            RegisterDynamicDispatcher(services, dispatcherType, configuration.Lifetime);
+        }
+        else
+        {
+            services.Add(new ServiceDescriptor(typeof(IDispatcher), dispatcherType, configuration.Lifetime));
+        }
 
         services.Add(new ServiceDescriptor(
             typeof(ISender),
@@ -568,4 +635,8 @@ internal static class ConduitRegistrar
             provider => provider.GetRequiredService<IDispatcher>(),
             configuration.Lifetime));
     }
+
+    private static void RegisterDynamicDispatcher(IServiceCollection services, Type dispatcherType, ServiceLifetime lifetime)
+        => services.Add(new ServiceDescriptor(
+            typeof(IDispatcher), provider => (IDispatcher)ActivatorUtilities.CreateInstance(provider, dispatcherType), lifetime));
 }

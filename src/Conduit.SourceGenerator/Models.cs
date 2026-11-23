@@ -11,6 +11,8 @@ internal enum HandlerKind
     Notification = 2,
     ExceptionHandler = 3,
     ExceptionAction = 4,
+    PreProcessor = 5,
+    PostProcessor = 6,
 }
 
 /// <summary>
