@@ -1,11 +1,11 @@
 #:property EnableNETAnalyzers=false
 #:property GenerateDocumentationFile=false
 
-// Conduit 合规门禁（.NET 10 file-based app）。
+// HandlerR 合规门禁（.NET 10 file-based app）。
 //
 // 覆盖技术方案第 1 / 3 / 11 节的红线与工程约束：
 //   · 红线 #1：产品源码与依赖图不得出现对标库（含传递依赖）
-//   · 契约包 Conduit.Contracts 依赖列表必须为空
+//   · 契约包 HandlerR.Contracts 依赖列表必须为空
 //   · 产品依赖图禁止 polyfill 包
 //   · 测试栈统一 TUnit / Microsoft.Testing.Platform，禁用包黑名单
 //   · TFM 合规：除源生成器（Roslyn 宿主约束）外只允许 net10.0
@@ -55,10 +55,10 @@ internal static class ComplianceRunner
 
     private static readonly string[] InternalAssemblyIds =
     [
-        "Conduit.Abstractions", "Conduit.Core", "Conduit.DependencyInjection",
+        "HandlerR.Abstractions", "HandlerR.Core", "HandlerR.DependencyInjection",
     ];
 
-    private const string SourceGeneratorProject = "Conduit.SourceGenerator.csproj";
+    private const string SourceGeneratorProject = "HandlerR.SourceGenerator.csproj";
 
     private static readonly List<string> Violations = [];
     private static string root = Directory.GetCurrentDirectory();
@@ -190,18 +190,18 @@ internal static class ComplianceRunner
     private static void CheckContractsHasNoDependency(Dictionary<string, HashSet<string>> productDependencies)
     {
         var contracts = productDependencies
-            .FirstOrDefault(pair => Path.GetFileName(pair.Key) == "Conduit.Contracts.csproj");
+            .FirstOrDefault(pair => Path.GetFileName(pair.Key) == "HandlerR.Contracts.csproj");
 
         if (contracts.Key is null)
         {
-            Report(false, string.Empty, "未找到 Conduit.Contracts 项目");
+            Report(false, string.Empty, "未找到 HandlerR.Contracts 项目");
             return;
         }
 
         Report(
             contracts.Value.Count == 0,
-            "Conduit.Contracts 依赖列表为空",
-            "Conduit.Contracts 存在包依赖");
+            "HandlerR.Contracts 依赖列表为空",
+            "HandlerR.Contracts 存在包依赖");
     }
 
     private static void CheckNoPolyfill(Dictionary<string, HashSet<string>> productDependencies)
@@ -295,7 +295,7 @@ internal static class ComplianceRunner
 
         Report(propsDeclaresNet10, "Directory.Build.props 统一声明 net10.0", "Directory.Build.props 未统一声明 net10.0");
 
-        var generatorProject = Path.Combine(root, "src", "Conduit.SourceGenerator", SourceGeneratorProject);
+        var generatorProject = Path.Combine(root, "src", "HandlerR.SourceGenerator", SourceGeneratorProject);
         var generatorStaysOnNetStandard = File.Exists(generatorProject)
             && File.ReadAllText(generatorProject).Contains("<TargetFramework>netstandard2.0</TargetFramework>", StringComparison.Ordinal);
 
@@ -305,31 +305,31 @@ internal static class ComplianceRunner
     private static void CheckPackageLayout()
     {
         var artifacts = Path.Combine(root, "artifacts");
-        var conduitPackage = FindPackage(artifacts, "Conduit");
-        var contractsPackage = FindPackage(artifacts, "Conduit.Contracts");
+        var handlerrPackage = FindPackage(artifacts, "HandlerR");
+        var contractsPackage = FindPackage(artifacts, "HandlerR.Contracts");
 
-        if (conduitPackage is null || contractsPackage is null)
+        if (handlerrPackage is null || contractsPackage is null)
         {
             Report(false, string.Empty, "artifacts/ 缺少 nupkg，请先执行 pack");
             return;
         }
 
-        using var conduitArchive = ZipFile.OpenRead(conduitPackage);
-        var conduitNuspec = ReadNuspec(conduitArchive, "Conduit.nuspec");
-        var conduitEntries = conduitArchive.Entries.Select(entry => entry.FullName).ToArray();
+        using var handlerrArchive = ZipFile.OpenRead(handlerrPackage);
+        var handlerrNuspec = ReadNuspec(handlerrArchive, "HandlerR.nuspec");
+        var handlerrEntries = handlerrArchive.Entries.Select(entry => entry.FullName).ToArray();
 
         var leaksInternals = InternalAssemblyIds.Any(id =>
-            conduitNuspec.Contains($"dependency id=\"{id}\"", StringComparison.Ordinal));
+            handlerrNuspec.Contains($"dependency id=\"{id}\"", StringComparison.Ordinal));
 
         Report(!leaksInternals, "主包不暴露内部程序集依赖", "主包把内部程序集声明为 NuGet 依赖");
 
-        var pinsContractsRange = conduitNuspec.Contains(
-            "dependency id=\"Conduit.Contracts\" version=\"[1.0.0, 2.0.0)\"",
+        var pinsContractsRange = handlerrNuspec.Contains(
+            "dependency id=\"HandlerR.Contracts\" version=\"[1.0.0, 2.0.0)\"",
             StringComparison.Ordinal);
 
         Report(pinsContractsRange, "主包以 [1.0.0, 2.0.0) 区间依赖契约包", "主包未按区间依赖契约包");
 
-        var libAssemblies = conduitEntries.Count(entry =>
+        var libAssemblies = handlerrEntries.Count(entry =>
             entry.StartsWith("lib/net10.0/", StringComparison.Ordinal)
             && entry.EndsWith(".dll", StringComparison.OrdinalIgnoreCase));
 
@@ -338,13 +338,13 @@ internal static class ComplianceRunner
             "主包 lib/net10.0 仅含 Abstractions/Core/DI 三个程序集",
             $"主包 lib/net10.0 程序集数量为 {libAssemblies}（期望 3）");
 
-        var hasGenerator = conduitEntries.Any(entry =>
-            entry.Equals("analyzers/dotnet/cs/Conduit.SourceGenerator.dll", StringComparison.Ordinal));
+        var hasGenerator = handlerrEntries.Any(entry =>
+            entry.Equals("analyzers/dotnet/cs/HandlerR.SourceGenerator.dll", StringComparison.Ordinal));
 
         Report(hasGenerator, "主包内含源生成器 analyzers 资产", "主包缺少源生成器 analyzers 资产");
 
         using var contractsArchive = ZipFile.OpenRead(contractsPackage);
-        var contractsNuspec = ReadNuspec(contractsArchive, "Conduit.Contracts.nuspec");
+        var contractsNuspec = ReadNuspec(contractsArchive, "HandlerR.Contracts.nuspec");
         Report(
             !contractsNuspec.Contains("<dependency", StringComparison.Ordinal),
             "契约包无任何依赖声明",
@@ -464,7 +464,7 @@ internal static class ComplianceRunner
         }
 
         // 注意：.NET 的文件通配只支持 * 与 ?，不支持 [0-9] 字符类，这里用正则区分
-        // "Conduit.1.0.0.nupkg" 与 "Conduit.Contracts.1.0.0.nupkg"
+        // "HandlerR.1.0.0.nupkg" 与 "HandlerR.Contracts.1.0.0.nupkg"
         var versionedName = new System.Text.RegularExpressions.Regex(
             $@"^{System.Text.RegularExpressions.Regex.Escape(packageId)}\.\d",
             System.Text.RegularExpressions.RegexOptions.IgnoreCase);
@@ -525,7 +525,7 @@ internal static class ComplianceRunner
         var directory = new DirectoryInfo(Directory.GetCurrentDirectory());
         while (directory is not null)
         {
-            if (File.Exists(Path.Combine(directory.FullName, "Conduit.slnx")))
+            if (File.Exists(Path.Combine(directory.FullName, "HandlerR.slnx")))
             {
                 return directory.FullName;
             }
@@ -559,7 +559,7 @@ internal static class ComplianceRunner
         用法: dotnet run scripts/check_compliance.cs [-- --packages] [--root <repo>]
 
           --packages    追加校验已打包 nupkg 的依赖声明与资产布局（需先 pack）
-          --root <path> 仓库根目录，默认从当前目录向上查找 Conduit.slnx
+          --root <path> 仓库根目录，默认从当前目录向上查找 HandlerR.slnx
           --help, -h    显示本帮助
 
         依赖检查读取已还原的项目图。请先还原或构建项目。

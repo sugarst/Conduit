@@ -14,7 +14,7 @@
     而隐式包引用由 ProcessFrameworkReferences / CollectPackageReferences 阶段生成，
     因此用 BeforeTargets 钩在这两个阶段之前完成改写。
   -->
-  <Target Name="_ConduitAlignAotToolchainVersions"
+  <Target Name="_HandlerRAlignAotToolchainVersions"
           BeforeTargets="ProcessFrameworkReferences;CollectPackageReferences">
     <ItemGroup>
       <KnownILCompilerPack Update="Microsoft.DotNet.ILCompiler"

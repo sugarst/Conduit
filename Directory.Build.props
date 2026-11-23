@@ -1,7 +1,7 @@
 <Project>
 
   <!--
-    Conduit 统一构建契约（对应技术方案 §2.5.3 / §11）：
+    HandlerR 统一构建契约（对应技术方案 §2.5.3 / §11）：
       1. 全库唯一产品目标框架 net10.0，禁止多目标、禁止 netstandard/netframework。
       2. 零第三方运行时依赖：产品项目不得引入任何 polyfill 包。
       3. 警告即错误，避免"AOT 裁剪警告被忽略"这类慢性腐化。
@@ -25,9 +25,9 @@
     <ManagePackageVersionsCentrally>true</ManagePackageVersionsCentrally>
     <CentralPackageTransitivePinningEnabled>true</CentralPackageTransitivePinningEnabled>
 
-    <Company>Conduit</Company>
-    <Authors>Conduit Contributors</Authors>
-    <Product>Conduit</Product>
+    <Company>HandlerR</Company>
+    <Authors>HandlerR Contributors</Authors>
+    <Product>HandlerR</Product>
     <PackageLicenseExpression>Apache-2.0</PackageLicenseExpression>
     <RepositoryType>git</RepositoryType>
     <PackageRequireLicenseAcceptance>false</PackageRequireLicenseAcceptance>
@@ -41,7 +41,7 @@
     <IsTestProject>false</IsTestProject>
   </PropertyGroup>
 
-  <PropertyGroup Condition="'$(ConduitAotCompatible)' == 'true'">
+  <PropertyGroup Condition="'$(HandlerRAotCompatible)' == 'true'">
     <IsAotCompatible>true</IsAotCompatible>
     <EnableTrimAnalyzer>true</EnableTrimAnalyzer>
     <EnableSingleFileAnalyzer>true</EnableSingleFileAnalyzer>

@@ -1,0 +1,31 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <IsTestProject>true</IsTestProject>
+    <EnableTUnitSourceGeneration>true</EnableTUnitSourceGeneration>
+    <IsPackable>false</IsPackable>
+    <GenerateDocumentationFile>false</GenerateDocumentationFile>
+    <!-- CDI001/CDI002 由 Roslyn 驱动测试在内存编译中验证，测试工程自身不把它们当错误 -->
+    <NoWarn>$(NoWarn);CDI001;CDI002;CDI003</NoWarn>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="TUnit" />
+    <PackageReference Include="Microsoft.Extensions.DependencyInjection" />
+    <PackageReference Include="Microsoft.CodeAnalysis.CSharp" />
+    <PackageReference Include="Microsoft.Testing.Extensions.TrxReport" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="../../src/HandlerR.DependencyInjection/HandlerR.DependencyInjection.csproj" />
+    <ProjectReference Include="../../src/HandlerR.Core/HandlerR.Core.csproj" />
+    <ProjectReference Include="../../src/HandlerR.Abstractions/HandlerR.Abstractions.csproj" />
+    <ProjectReference Include="../../src/HandlerR.Contracts/HandlerR.Contracts.csproj" />
+    <!-- 同一工程既作为生成器（Analyzer）又作为可反射引用的程序集（驱动测试需要实例化生成器） -->
+    <ProjectReference Include="../../src/HandlerR.SourceGenerator/HandlerR.SourceGenerator.csproj"
+                      OutputItemType="Analyzer"
+                      ReferenceOutputAssembly="true" />
+  </ItemGroup>
+
+</Project>

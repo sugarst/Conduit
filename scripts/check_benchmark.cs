@@ -1,7 +1,7 @@
 #:property EnableNETAnalyzers=false
 #:property GenerateDocumentationFile=false
 
-// Conduit 基准回归门禁（.NET 10 file-based app）。
+// HandlerR 基准回归门禁（.NET 10 file-based app）。
 //
 // 读取 BenchmarkDotNet 导出的 JSON 报告，与 benchmarks/baseline.json 比较：
 // 均值或分配量超出基线 stopLossMultiplier 倍即判定回归（技术方案第 13 节止损条件）。
@@ -282,7 +282,7 @@ internal static class Runner
         var directory = new DirectoryInfo(Directory.GetCurrentDirectory());
         while (directory is not null)
         {
-            if (File.Exists(Path.Combine(directory.FullName, "Conduit.slnx"))
+            if (File.Exists(Path.Combine(directory.FullName, "HandlerR.slnx"))
                 || File.Exists(Path.Combine(directory.FullName, "Directory.Build.props")))
             {
                 return directory.FullName;

@@ -16,7 +16,7 @@
     <PackageVersion Include="BenchmarkDotNet" Version="0.15.8" />
     <!--
       PublicApiAnalyzers：版本已核实，但 PublicAPI.Shipped/Unshipped.txt 快照需要 IDE codefix 维护，
-      命令行无法生成。当前以 tests/Conduit.Tests/PublicApiSurfaceTests.cs（反射快照审批）落地同等门禁。
+      命令行无法生成。当前以 tests/HandlerR.Tests/PublicApiSurfaceTests.cs（反射快照审批）落地同等门禁。
     -->
     <PackageVersion Include="Microsoft.CodeAnalysis.PublicApiAnalyzers" Version="5.6.0" />
   </ItemGroup>

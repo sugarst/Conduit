@@ -1,0 +1,387 @@
+# HandlerR.Contracts
+T HandlerR.Contracts.IBaseRequest [interface]
+T HandlerR.Contracts.INotification [interface]
+T HandlerR.Contracts.IRequest [interface; implements:HandlerR.Contracts.IBaseRequest]
+T HandlerR.Contracts.IRequest`1 [interface; implements:HandlerR.Contracts.IBaseRequest]
+T HandlerR.Contracts.IStreamRequest`1 [interface]
+T HandlerR.Contracts.Unit [sealed]
+  M HandlerR.Contracts.Unit.CompareTo`0(HandlerR.Contracts.Unit) -> System.Int32
+  M HandlerR.Contracts.Unit.Equals`0(HandlerR.Contracts.Unit) -> System.Boolean
+  M HandlerR.Contracts.Unit.Equals`0(System.Object) -> System.Boolean
+  M HandlerR.Contracts.Unit.GetHashCode`0() -> System.Int32
+  M HandlerR.Contracts.Unit.ToString`0() -> System.String
+  P HandlerR.Contracts.Unit.Task : System.Threading.Tasks.Task (get)
+  P HandlerR.Contracts.Unit.Value : HandlerR.Contracts.Unit& (get)
+
+# HandlerR.Abstractions
+T HandlerR.Abstractions.DuplicateHandlerException [sealed; base:HandlerR.Abstractions.HandlerRException]
+  C HandlerR.Abstractions.DuplicateHandlerException(System.Type, System.Collections.Generic.IReadOnlyList`1[System.Type])
+  P HandlerR.Abstractions.DuplicateHandlerException.Implementations : System.Collections.Generic.IReadOnlyList`1[System.Type] (get)
+  P HandlerR.Abstractions.DuplicateHandlerException.ServiceType : System.Type (get)
+T HandlerR.Abstractions.ExceptionActionStrategy [sealed]
+  F HandlerR.Abstractions.ExceptionActionStrategy.value__ : System.Int32
+  F static HandlerR.Abstractions.ExceptionActionStrategy.ApplyForAllExceptions : HandlerR.Abstractions.ExceptionActionStrategy
+  F static HandlerR.Abstractions.ExceptionActionStrategy.ApplyForUnhandledExceptions : HandlerR.Abstractions.ExceptionActionStrategy
+T HandlerR.Abstractions.ExceptionHandlingState [sealed]
+  F HandlerR.Abstractions.ExceptionHandlingState.value__ : System.Int32
+  F static HandlerR.Abstractions.ExceptionHandlingState.Handled : HandlerR.Abstractions.ExceptionHandlingState
+  F static HandlerR.Abstractions.ExceptionHandlingState.Unhandled : HandlerR.Abstractions.ExceptionHandlingState
+T HandlerR.Abstractions.ExceptionOutcome`1 [sealed]
+  C HandlerR.Abstractions.ExceptionOutcome`1(HandlerR.Abstractions.ExceptionHandlingState, TResponse)
+  M HandlerR.Abstractions.ExceptionOutcome`1.Deconstruct`0(HandlerR.Abstractions.ExceptionHandlingState&, TResponse&) -> System.Void
+  M HandlerR.Abstractions.ExceptionOutcome`1.Equals`0(HandlerR.Abstractions.ExceptionOutcome`1[TResponse]) -> System.Boolean
+  M HandlerR.Abstractions.ExceptionOutcome`1.Equals`0(System.Object) -> System.Boolean
+  M HandlerR.Abstractions.ExceptionOutcome`1.GetHashCode`0() -> System.Int32
+  M HandlerR.Abstractions.ExceptionOutcome`1.ToString`0() -> System.String
+  M static HandlerR.Abstractions.ExceptionOutcome`1.Handled`0(TResponse) -> HandlerR.Abstractions.ExceptionOutcome`1[TResponse]
+  M static HandlerR.Abstractions.ExceptionOutcome`1.Unhandled`0() -> HandlerR.Abstractions.ExceptionOutcome`1[TResponse]
+  P HandlerR.Abstractions.ExceptionOutcome`1.Response : TResponse (getset)
+  P HandlerR.Abstractions.ExceptionOutcome`1.State : HandlerR.Abstractions.ExceptionHandlingState (getset)
+T HandlerR.Abstractions.HandlerNotFoundException [sealed; base:HandlerR.Abstractions.HandlerRException]
+  C HandlerR.Abstractions.HandlerNotFoundException(System.Type)
+  P HandlerR.Abstractions.HandlerNotFoundException.RequestType : System.Type (get)
+T HandlerR.Abstractions.HandlerRConfigurationException [sealed; base:HandlerR.Abstractions.HandlerRException]
+  C HandlerR.Abstractions.HandlerRConfigurationException(System.String)
+  C HandlerR.Abstractions.HandlerRConfigurationException(System.String, System.Exception)
+T HandlerR.Abstractions.HandlerRException [base:System.Exception]
+T HandlerR.Abstractions.HandlerRStartupValidationException [sealed; base:HandlerR.Abstractions.HandlerRException]
+  C HandlerR.Abstractions.HandlerRStartupValidationException(System.Collections.Generic.IReadOnlyList`1[System.String])
+  P HandlerR.Abstractions.HandlerRStartupValidationException.Failures : System.Collections.Generic.IReadOnlyList`1[System.String] (get)
+T HandlerR.Abstractions.ICacheKeyProvider [interface]
+  M HandlerR.Abstractions.ICacheKeyProvider.GetCacheKey`0() -> System.String
+T HandlerR.Abstractions.ICacheable [interface]
+  P HandlerR.Abstractions.ICacheable.CacheDuration : System.Nullable`1[System.TimeSpan] (get)
+T HandlerR.Abstractions.ICommand [interface; implements:HandlerR.Contracts.IBaseRequest+HandlerR.Contracts.IRequest+HandlerR.Contracts.IRequest`1[[HandlerR.Contracts.Unit, HandlerR.Contracts, Version=1.0.0.0, Culture=neutral, PublicKeyToken=null]]]
+T HandlerR.Abstractions.IConcurrentNotificationPublisher [interface; implements:HandlerR.Abstractions.INotificationPublisher]
+T HandlerR.Abstractions.IDispatcher [interface; implements:HandlerR.Abstractions.IPublisher+HandlerR.Abstractions.ISender]
+T HandlerR.Abstractions.IIdempotent [interface]
+  P HandlerR.Abstractions.IIdempotent.IdempotencyKey : System.String (get)
+T HandlerR.Abstractions.INotificationHandler`1 [interface]
+  M HandlerR.Abstractions.INotificationHandler`1.HandleAsync`0(TNotification, System.Threading.CancellationToken) -> System.Threading.Tasks.ValueTask
+T HandlerR.Abstractions.INotificationPublisher [interface]
+  M HandlerR.Abstractions.INotificationPublisher.PublishAsync`0(System.Collections.Generic.IReadOnlyList`1[HandlerR.Abstractions.NotificationHandlerExecutor], HandlerR.Contracts.INotification, System.Threading.CancellationToken) -> System.Threading.Tasks.ValueTask
+T HandlerR.Abstractions.IPipelineBehavior`2 [interface]
+  M HandlerR.Abstractions.IPipelineBehavior`2.HandleAsync`0(TRequest, HandlerR.Abstractions.RequestHandlerDelegate`1[TResponse], System.Threading.CancellationToken) -> System.Threading.Tasks.ValueTask`1[TResponse]
+T HandlerR.Abstractions.IPublisher [interface]
+  M HandlerR.Abstractions.IPublisher.PublishAsync`1(TNotification, System.Threading.CancellationToken) -> System.Threading.Tasks.ValueTask
+T HandlerR.Abstractions.IQuery`1 [interface; implements:HandlerR.Contracts.IBaseRequest+HandlerR.Contracts.IRequest`1[TResponse]]
+T HandlerR.Abstractions.IRequestCache [interface]
+  M HandlerR.Abstractions.IRequestCache.SetAsync`0(System.String, System.Object, System.Nullable`1[System.TimeSpan], System.Threading.CancellationToken) -> System.Threading.Tasks.ValueTask
+  M HandlerR.Abstractions.IRequestCache.TryAddAsync`0(System.String, System.Object, System.Nullable`1[System.TimeSpan], System.Threading.CancellationToken) -> System.Threading.Tasks.ValueTask`1[System.Boolean]
+  M HandlerR.Abstractions.IRequestCache.TryGetAsync`0(System.String, System.Threading.CancellationToken) -> System.Threading.Tasks.ValueTask`1[System.ValueTuple`2[System.Boolean,System.Object]]
+T HandlerR.Abstractions.IRequestExceptionAction`2 [interface]
+  M HandlerR.Abstractions.IRequestExceptionAction`2.ExecuteAsync`0(TRequest, TException, System.Threading.CancellationToken) -> System.Threading.Tasks.ValueTask
+T HandlerR.Abstractions.IRequestExceptionHandler`3 [interface]
+  M HandlerR.Abstractions.IRequestExceptionHandler`3.HandleAsync`0(TRequest, TException, HandlerR.Abstractions.ExceptionOutcome`1[TResponse], System.Threading.CancellationToken) -> System.Threading.Tasks.ValueTask`1[HandlerR.Abstractions.ExceptionOutcome`1[TResponse]]
+T HandlerR.Abstractions.IRequestHandler`2 [interface]
+  M HandlerR.Abstractions.IRequestHandler`2.HandleAsync`0(TRequest, System.Threading.CancellationToken) -> System.Threading.Tasks.ValueTask`1[TResponse]
+T HandlerR.Abstractions.IRequestPostProcessor`2 [interface]
+  M HandlerR.Abstractions.IRequestPostProcessor`2.ProcessAsync`0(TRequest, TResponse, System.Threading.CancellationToken) -> System.Threading.Tasks.ValueTask
+T HandlerR.Abstractions.IRequestPreProcessor`1 [interface]
+  M HandlerR.Abstractions.IRequestPreProcessor`1.ProcessAsync`0(TRequest, System.Threading.CancellationToken) -> System.Threading.Tasks.ValueTask
+T HandlerR.Abstractions.IRequestValidator`1 [interface]
+  M HandlerR.Abstractions.IRequestValidator`1.ValidateAsync`0(TRequest, System.Threading.CancellationToken) -> System.Threading.Tasks.ValueTask`1[System.Collections.Generic.IReadOnlyList`1[HandlerR.Abstractions.ValidationError]]
+T HandlerR.Abstractions.IRetryable [interface]
+  P HandlerR.Abstractions.IRetryable.Policy : HandlerR.Abstractions.RetryPolicy (get)
+T HandlerR.Abstractions.ISender [interface]
+  M HandlerR.Abstractions.ISender.SendAsync`1(HandlerR.Contracts.IRequest`1[TResponse], System.Threading.CancellationToken) -> System.Threading.Tasks.ValueTask`1[TResponse]
+  M HandlerR.Abstractions.ISender.StreamAsync`1(HandlerR.Contracts.IStreamRequest`1[TResponse], System.Threading.CancellationToken) -> System.Collections.Generic.IAsyncEnumerable`1[TResponse]
+T HandlerR.Abstractions.IStreamPipelineBehavior`2 [interface]
+  M HandlerR.Abstractions.IStreamPipelineBehavior`2.HandleStreamAsync`0(TRequest, HandlerR.Abstractions.StreamHandlerDelegate`1[TResponse], System.Threading.CancellationToken) -> System.Collections.Generic.IAsyncEnumerable`1[TResponse]
+T HandlerR.Abstractions.IStreamRequestHandler`2 [interface]
+  M HandlerR.Abstractions.IStreamRequestHandler`2.HandleStreamAsync`0(TRequest, System.Threading.CancellationToken) -> System.Collections.Generic.IAsyncEnumerable`1[TResponse]
+T HandlerR.Abstractions.ITimeoutRequest [interface]
+  P HandlerR.Abstractions.ITimeoutRequest.Timeout : System.TimeSpan (get)
+T HandlerR.Abstractions.ITransactionScope [interface]
+  M HandlerR.Abstractions.ITransactionScope.CommitAsync`0(System.Threading.CancellationToken) -> System.Threading.Tasks.ValueTask
+  M HandlerR.Abstractions.ITransactionScope.RollbackAsync`0(System.Threading.CancellationToken) -> System.Threading.Tasks.ValueTask
+T HandlerR.Abstractions.ITransactionScopeFactory [interface]
+  M HandlerR.Abstractions.ITransactionScopeFactory.BeginAsync`0(System.Threading.CancellationToken) -> System.Threading.Tasks.ValueTask`1[HandlerR.Abstractions.ITransactionScope]
+T HandlerR.Abstractions.ITransactionalRequest [interface]
+T HandlerR.Abstractions.NotificationHandlerExecutor [sealed]
+  C HandlerR.Abstractions.NotificationHandlerExecutor(System.Func`3[HandlerR.Contracts.INotification,System.Threading.CancellationToken,System.Threading.Tasks.ValueTask])
+  M HandlerR.Abstractions.NotificationHandlerExecutor.Deconstruct`0(System.Func`3[HandlerR.Contracts.INotification,System.Threading.CancellationToken,System.Threading.Tasks.ValueTask]&) -> System.Void
+  M HandlerR.Abstractions.NotificationHandlerExecutor.Equals`0(HandlerR.Abstractions.NotificationHandlerExecutor) -> System.Boolean
+  M HandlerR.Abstractions.NotificationHandlerExecutor.Equals`0(System.Object) -> System.Boolean
+  M HandlerR.Abstractions.NotificationHandlerExecutor.GetHashCode`0() -> System.Int32
+  M HandlerR.Abstractions.NotificationHandlerExecutor.ToString`0() -> System.String
+  P HandlerR.Abstractions.NotificationHandlerExecutor.Handler : System.Func`3[HandlerR.Contracts.INotification,System.Threading.CancellationToken,System.Threading.Tasks.ValueTask] (getset)
+T HandlerR.Abstractions.RequestHandlerDelegate`1 [sealed; base:System.MulticastDelegate]
+  C HandlerR.Abstractions.RequestHandlerDelegate`1(System.Object, System.IntPtr)
+  M HandlerR.Abstractions.RequestHandlerDelegate`1.BeginInvoke`0(System.AsyncCallback, System.Object) -> System.IAsyncResult
+  M HandlerR.Abstractions.RequestHandlerDelegate`1.EndInvoke`0(System.IAsyncResult) -> System.Threading.Tasks.ValueTask`1[TResponse]
+  M HandlerR.Abstractions.RequestHandlerDelegate`1.Invoke`0() -> System.Threading.Tasks.ValueTask`1[TResponse]
+T HandlerR.Abstractions.RequestValidationException [sealed; base:System.Exception]
+  C HandlerR.Abstractions.RequestValidationException(System.Collections.Generic.IReadOnlyList`1[HandlerR.Abstractions.ValidationError])
+  P HandlerR.Abstractions.RequestValidationException.Errors : System.Collections.Generic.IReadOnlyList`1[HandlerR.Abstractions.ValidationError] (get)
+T HandlerR.Abstractions.ResponseTypeMismatchException [sealed; base:HandlerR.Abstractions.HandlerRException]
+  C HandlerR.Abstractions.ResponseTypeMismatchException(System.Type, System.Type)
+  P HandlerR.Abstractions.ResponseTypeMismatchException.ExpectedResponseType : System.Type (get)
+  P HandlerR.Abstractions.ResponseTypeMismatchException.RequestType : System.Type (get)
+T HandlerR.Abstractions.RetryPolicy [sealed]
+  C HandlerR.Abstractions.RetryPolicy(System.Int32, System.TimeSpan, System.Nullable`1[System.TimeSpan], System.Boolean)
+  M HandlerR.Abstractions.RetryPolicy.Deconstruct`0(System.Int32&, System.TimeSpan&, System.Nullable`1[System.TimeSpan]&, System.Boolean&) -> System.Void
+  M HandlerR.Abstractions.RetryPolicy.Equals`0(HandlerR.Abstractions.RetryPolicy) -> System.Boolean
+  M HandlerR.Abstractions.RetryPolicy.Equals`0(System.Object) -> System.Boolean
+  M HandlerR.Abstractions.RetryPolicy.GetHashCode`0() -> System.Int32
+  M HandlerR.Abstractions.RetryPolicy.ToString`0() -> System.String
+  P HandlerR.Abstractions.RetryPolicy.BaseDelay : System.TimeSpan (getset)
+  P HandlerR.Abstractions.RetryPolicy.Default : HandlerR.Abstractions.RetryPolicy (get)
+  P HandlerR.Abstractions.RetryPolicy.MaxAttempts : System.Int32 (getset)
+  P HandlerR.Abstractions.RetryPolicy.MaxDelay : System.Nullable`1[System.TimeSpan] (getset)
+  P HandlerR.Abstractions.RetryPolicy.UseJitter : System.Boolean (getset)
+T HandlerR.Abstractions.StreamHandlerDelegate`1 [sealed; base:System.MulticastDelegate]
+  C HandlerR.Abstractions.StreamHandlerDelegate`1(System.Object, System.IntPtr)
+  M HandlerR.Abstractions.StreamHandlerDelegate`1.BeginInvoke`0(System.AsyncCallback, System.Object) -> System.IAsyncResult
+  M HandlerR.Abstractions.StreamHandlerDelegate`1.EndInvoke`0(System.IAsyncResult) -> System.Collections.Generic.IAsyncEnumerable`1[TResponse]
+  M HandlerR.Abstractions.StreamHandlerDelegate`1.Invoke`0() -> System.Collections.Generic.IAsyncEnumerable`1[TResponse]
+T HandlerR.Abstractions.ValidationError [sealed]
+  C HandlerR.Abstractions.ValidationError(System.String, System.String, System.String)
+  M HandlerR.Abstractions.ValidationError.Deconstruct`0(System.String&, System.String&, System.String&) -> System.Void
+  M HandlerR.Abstractions.ValidationError.Equals`0(HandlerR.Abstractions.ValidationError) -> System.Boolean
+  M HandlerR.Abstractions.ValidationError.Equals`0(System.Object) -> System.Boolean
+  M HandlerR.Abstractions.ValidationError.GetHashCode`0() -> System.Int32
+  M HandlerR.Abstractions.ValidationError.ToString`0() -> System.String
+  P HandlerR.Abstractions.ValidationError.ErrorCode : System.String (getset)
+  P HandlerR.Abstractions.ValidationError.Identifier : System.String (getset)
+  P HandlerR.Abstractions.ValidationError.Message : System.String (getset)
+
+# HandlerR.Core
+T HandlerR.Core.Behaviors.CachingBehavior`2 [sealed; implements:HandlerR.Abstractions.IPipelineBehavior`2[TRequest,TResponse]]
+  C HandlerR.Core.Behaviors.CachingBehavior`2(System.IServiceProvider)
+  M HandlerR.Core.Behaviors.CachingBehavior`2.HandleAsync`0(TRequest, HandlerR.Abstractions.RequestHandlerDelegate`1[TResponse], System.Threading.CancellationToken) -> System.Threading.Tasks.ValueTask`1[TResponse]
+  P HandlerR.Core.Behaviors.CachingBehavior`2.DefaultTimeToLive : System.TimeSpan (getset)
+T HandlerR.Core.Behaviors.HandlerRDuplicateRequestException [sealed; base:HandlerR.Abstractions.HandlerRException]
+  C HandlerR.Core.Behaviors.HandlerRDuplicateRequestException(System.Type, System.String)
+  P HandlerR.Core.Behaviors.HandlerRDuplicateRequestException.IdempotencyKey : System.String (get)
+  P HandlerR.Core.Behaviors.HandlerRDuplicateRequestException.RequestType : System.Type (get)
+T HandlerR.Core.Behaviors.IdempotencyBehavior`2 [sealed; implements:HandlerR.Abstractions.IPipelineBehavior`2[TRequest,TResponse]]
+  C HandlerR.Core.Behaviors.IdempotencyBehavior`2(System.IServiceProvider)
+  M HandlerR.Core.Behaviors.IdempotencyBehavior`2.HandleAsync`0(TRequest, HandlerR.Abstractions.RequestHandlerDelegate`1[TResponse], System.Threading.CancellationToken) -> System.Threading.Tasks.ValueTask`1[TResponse]
+  P HandlerR.Core.Behaviors.IdempotencyBehavior`2.TimeToLive : System.TimeSpan (getset)
+T HandlerR.Core.Behaviors.RequestCacheKey [static]
+  M static HandlerR.Core.Behaviors.RequestCacheKey.For`1(TRequest) -> System.String
+T HandlerR.Core.Behaviors.RetryBehavior`2 [sealed; implements:HandlerR.Abstractions.IPipelineBehavior`2[TRequest,TResponse]]
+  C HandlerR.Core.Behaviors.RetryBehavior`2()
+  M HandlerR.Core.Behaviors.RetryBehavior`2.HandleAsync`0(TRequest, HandlerR.Abstractions.RequestHandlerDelegate`1[TResponse], System.Threading.CancellationToken) -> System.Threading.Tasks.ValueTask`1[TResponse]
+T HandlerR.Core.Behaviors.TelemetryBehavior`2 [sealed; implements:HandlerR.Abstractions.IPipelineBehavior`2[TRequest,TResponse]]
+  C HandlerR.Core.Behaviors.TelemetryBehavior`2()
+  M HandlerR.Core.Behaviors.TelemetryBehavior`2.HandleAsync`0(TRequest, HandlerR.Abstractions.RequestHandlerDelegate`1[TResponse], System.Threading.CancellationToken) -> System.Threading.Tasks.ValueTask`1[TResponse]
+T HandlerR.Core.Behaviors.TimeoutBehavior`2 [sealed; implements:HandlerR.Abstractions.IPipelineBehavior`2[TRequest,TResponse]]
+  C HandlerR.Core.Behaviors.TimeoutBehavior`2()
+  M HandlerR.Core.Behaviors.TimeoutBehavior`2.HandleAsync`0(TRequest, HandlerR.Abstractions.RequestHandlerDelegate`1[TResponse], System.Threading.CancellationToken) -> System.Threading.Tasks.ValueTask`1[TResponse]
+T HandlerR.Core.Behaviors.TransactionBehavior`2 [sealed; implements:HandlerR.Abstractions.IPipelineBehavior`2[TRequest,TResponse]]
+  C HandlerR.Core.Behaviors.TransactionBehavior`2(System.IServiceProvider)
+  M HandlerR.Core.Behaviors.TransactionBehavior`2.HandleAsync`0(TRequest, HandlerR.Abstractions.RequestHandlerDelegate`1[TResponse], System.Threading.CancellationToken) -> System.Threading.Tasks.ValueTask`1[TResponse]
+T HandlerR.Core.Behaviors.ValidationBehavior`2 [sealed; implements:HandlerR.Abstractions.IPipelineBehavior`2[TRequest,TResponse]]
+  C HandlerR.Core.Behaviors.ValidationBehavior`2(System.Collections.Generic.IEnumerable`1[HandlerR.Abstractions.IRequestValidator`1[TRequest]])
+  M HandlerR.Core.Behaviors.ValidationBehavior`2.HandleAsync`0(TRequest, HandlerR.Abstractions.RequestHandlerDelegate`1[TResponse], System.Threading.CancellationToken) -> System.Threading.Tasks.ValueTask`1[TResponse]
+T HandlerR.Core.Caching.InMemoryRequestCache [sealed; implements:HandlerR.Abstractions.IRequestCache]
+  C HandlerR.Core.Caching.InMemoryRequestCache(System.TimeProvider)
+  M HandlerR.Core.Caching.InMemoryRequestCache.SetAsync`0(System.String, System.Object, System.Nullable`1[System.TimeSpan], System.Threading.CancellationToken) -> System.Threading.Tasks.ValueTask
+  M HandlerR.Core.Caching.InMemoryRequestCache.TryAddAsync`0(System.String, System.Object, System.Nullable`1[System.TimeSpan], System.Threading.CancellationToken) -> System.Threading.Tasks.ValueTask`1[System.Boolean]
+  M HandlerR.Core.Caching.InMemoryRequestCache.TryGetAsync`0(System.String, System.Threading.CancellationToken) -> System.Threading.Tasks.ValueTask`1[System.ValueTuple`2[System.Boolean,System.Object]]
+  P HandlerR.Core.Caching.InMemoryRequestCache.SweepInterval : System.TimeSpan (getset)
+T HandlerR.Core.Dispatch.DispatchTableBuilder [sealed]
+  C HandlerR.Core.Dispatch.DispatchTableBuilder()
+  M HandlerR.Core.Dispatch.DispatchTableBuilder.AddStream`0(HandlerR.Core.Dispatch.StreamHandlerEntry) -> System.Void
+  M HandlerR.Core.Dispatch.DispatchTableBuilder.Add`0(HandlerR.Core.Dispatch.RequestHandlerEntry) -> System.Void
+  M HandlerR.Core.Dispatch.DispatchTableBuilder.Build`0() -> HandlerR.Core.Dispatch.DispatchTables
+  P HandlerR.Core.Dispatch.DispatchTableBuilder.RequestCount : System.Int32 (get)
+  P HandlerR.Core.Dispatch.DispatchTableBuilder.StreamCount : System.Int32 (get)
+T HandlerR.Core.Dispatch.DispatchTables [sealed]
+  C HandlerR.Core.Dispatch.DispatchTables(System.Collections.Frozen.FrozenDictionary`2[System.Type,HandlerR.Core.Dispatch.RequestHandlerEntry], System.Collections.Frozen.FrozenDictionary`2[System.Type,HandlerR.Core.Dispatch.StreamHandlerEntry])
+  P HandlerR.Core.Dispatch.DispatchTables.Empty : HandlerR.Core.Dispatch.DispatchTables (get)
+  P HandlerR.Core.Dispatch.DispatchTables.Requests : System.Collections.Frozen.FrozenDictionary`2[System.Type,HandlerR.Core.Dispatch.RequestHandlerEntry] (get)
+  P HandlerR.Core.Dispatch.DispatchTables.Streams : System.Collections.Frozen.FrozenDictionary`2[System.Type,HandlerR.Core.Dispatch.StreamHandlerEntry] (get)
+T HandlerR.Core.Dispatch.ExceptionActionInvoker`2 [sealed; implements:HandlerR.Core.Dispatch.IExceptionActionInvoker+HandlerR.Core.Dispatch.IExceptionInvoker]
+  C HandlerR.Core.Dispatch.ExceptionActionInvoker`2()
+  M HandlerR.Core.Dispatch.ExceptionActionInvoker`2.InvokeAsync`0(System.Object, System.Exception, System.IServiceProvider, System.Threading.CancellationToken) -> System.Threading.Tasks.ValueTask
+  P HandlerR.Core.Dispatch.ExceptionActionInvoker`2.ExceptionType : System.Type (get)
+T HandlerR.Core.Dispatch.ExceptionHandlerInvoker`3 [sealed; implements:HandlerR.Core.Dispatch.IExceptionHandlerInvoker+HandlerR.Core.Dispatch.IExceptionInvoker]
+  C HandlerR.Core.Dispatch.ExceptionHandlerInvoker`3()
+  M HandlerR.Core.Dispatch.ExceptionHandlerInvoker`3.InvokeAsync`0(System.Object, System.Exception, HandlerR.Core.Dispatch.ExceptionOutcomeResult, System.IServiceProvider, System.Threading.CancellationToken) -> System.Threading.Tasks.ValueTask`1[HandlerR.Core.Dispatch.ExceptionOutcomeResult]
+  P HandlerR.Core.Dispatch.ExceptionHandlerInvoker`3.ExceptionType : System.Type (get)
+T HandlerR.Core.Dispatch.ExceptionOutcomeResult [sealed]
+  C HandlerR.Core.Dispatch.ExceptionOutcomeResult(System.Boolean, System.Object)
+  M HandlerR.Core.Dispatch.ExceptionOutcomeResult.Deconstruct`0(System.Boolean&, System.Object&) -> System.Void
+  M HandlerR.Core.Dispatch.ExceptionOutcomeResult.Equals`0(HandlerR.Core.Dispatch.ExceptionOutcomeResult) -> System.Boolean
+  M HandlerR.Core.Dispatch.ExceptionOutcomeResult.Equals`0(System.Object) -> System.Boolean
+  M HandlerR.Core.Dispatch.ExceptionOutcomeResult.GetHashCode`0() -> System.Int32
+  M HandlerR.Core.Dispatch.ExceptionOutcomeResult.ToString`0() -> System.String
+  P HandlerR.Core.Dispatch.ExceptionOutcomeResult.Handled : System.Boolean (getset)
+  P HandlerR.Core.Dispatch.ExceptionOutcomeResult.Response : System.Object (getset)
+T HandlerR.Core.Dispatch.IExceptionActionInvoker [interface; implements:HandlerR.Core.Dispatch.IExceptionInvoker]
+  M HandlerR.Core.Dispatch.IExceptionActionInvoker.InvokeAsync`0(System.Object, System.Exception, System.IServiceProvider, System.Threading.CancellationToken) -> System.Threading.Tasks.ValueTask
+T HandlerR.Core.Dispatch.IExceptionDispatcher`2 [interface]
+  M HandlerR.Core.Dispatch.IExceptionDispatcher`2.DispatchAsync`0(TRequest, System.Exception, System.IServiceProvider, System.Threading.CancellationToken) -> System.Threading.Tasks.ValueTask`1[HandlerR.Abstractions.ExceptionOutcome`1[TResponse]]
+T HandlerR.Core.Dispatch.IExceptionHandlerInvoker [interface; implements:HandlerR.Core.Dispatch.IExceptionInvoker]
+  M HandlerR.Core.Dispatch.IExceptionHandlerInvoker.InvokeAsync`0(System.Object, System.Exception, HandlerR.Core.Dispatch.ExceptionOutcomeResult, System.IServiceProvider, System.Threading.CancellationToken) -> System.Threading.Tasks.ValueTask`1[HandlerR.Core.Dispatch.ExceptionOutcomeResult]
+T HandlerR.Core.Dispatch.IExceptionInvoker [interface]
+  P HandlerR.Core.Dispatch.IExceptionInvoker.ExceptionType : System.Type (get)
+T HandlerR.Core.Dispatch.IProcessorInvoker [interface]
+  M HandlerR.Core.Dispatch.IProcessorInvoker.InvokeAsync`0(System.Object, System.Object, System.IServiceProvider, System.Threading.CancellationToken) -> System.Threading.Tasks.ValueTask
+T HandlerR.Core.Dispatch.IRequestPostProcessorRunner [interface]
+  M HandlerR.Core.Dispatch.IRequestPostProcessorRunner.RunAsync`0(System.Object, System.Object, System.IServiceProvider, System.Threading.CancellationToken) -> System.Threading.Tasks.ValueTask
+T HandlerR.Core.Dispatch.IRequestPreProcessorRunner [interface]
+  M HandlerR.Core.Dispatch.IRequestPreProcessorRunner.RunAsync`0(System.Object, System.IServiceProvider, System.Threading.CancellationToken) -> System.Threading.Tasks.ValueTask
+T HandlerR.Core.Dispatch.PostProcessorInvoker`2 [sealed; implements:HandlerR.Core.Dispatch.IProcessorInvoker]
+  C HandlerR.Core.Dispatch.PostProcessorInvoker`2()
+  M HandlerR.Core.Dispatch.PostProcessorInvoker`2.InvokeAsync`0(System.Object, System.Object, System.IServiceProvider, System.Threading.CancellationToken) -> System.Threading.Tasks.ValueTask
+T HandlerR.Core.Dispatch.PreProcessorInvoker`1 [sealed; implements:HandlerR.Core.Dispatch.IProcessorInvoker]
+  C HandlerR.Core.Dispatch.PreProcessorInvoker`1()
+  M HandlerR.Core.Dispatch.PreProcessorInvoker`1.InvokeAsync`0(System.Object, System.Object, System.IServiceProvider, System.Threading.CancellationToken) -> System.Threading.Tasks.ValueTask
+T HandlerR.Core.Dispatch.RequestExceptionDispatcher`2 [sealed; implements:HandlerR.Core.Dispatch.IExceptionDispatcher`2[TRequest,TResponse]]
+  C HandlerR.Core.Dispatch.RequestExceptionDispatcher`2(System.Collections.Generic.IEnumerable`1[HandlerR.Core.Dispatch.IExceptionHandlerInvoker], System.Collections.Generic.IEnumerable`1[HandlerR.Core.Dispatch.IExceptionActionInvoker], HandlerR.Abstractions.ExceptionActionStrategy)
+  M HandlerR.Core.Dispatch.RequestExceptionDispatcher`2.DispatchAsync`0(TRequest, System.Exception, System.IServiceProvider, System.Threading.CancellationToken) -> System.Threading.Tasks.ValueTask`1[HandlerR.Abstractions.ExceptionOutcome`1[TResponse]]
+T HandlerR.Core.Dispatch.RequestHandlerEntry
+  P HandlerR.Core.Dispatch.RequestHandlerEntry.HandlerServiceType : System.Type (get)
+  P HandlerR.Core.Dispatch.RequestHandlerEntry.RequestType : System.Type (get)
+  P HandlerR.Core.Dispatch.RequestHandlerEntry.ResponseType : System.Type (get)
+T HandlerR.Core.Dispatch.RequestHandlerEntry`1 [base:HandlerR.Core.Dispatch.RequestHandlerEntry]
+  M HandlerR.Core.Dispatch.RequestHandlerEntry`1.InvokeAsync`0(System.Object, System.IServiceProvider, System.Threading.CancellationToken) -> System.Threading.Tasks.ValueTask`1[TResponse]
+  P HandlerR.Core.Dispatch.RequestHandlerEntry`1.ResponseType : System.Type (get)
+T HandlerR.Core.Dispatch.RequestHandlerEntry`2 [sealed; base:]
+  C HandlerR.Core.Dispatch.RequestHandlerEntry`2()
+  M HandlerR.Core.Dispatch.RequestHandlerEntry`2.InvokeAsync`0(System.Object, System.IServiceProvider, System.Threading.CancellationToken) -> System.Threading.Tasks.ValueTask`1[TResponse]
+  P HandlerR.Core.Dispatch.RequestHandlerEntry`2.HandlerServiceType : System.Type (get)
+  P HandlerR.Core.Dispatch.RequestHandlerEntry`2.RequestType : System.Type (get)
+T HandlerR.Core.Dispatch.RequestPostProcessorRunner [sealed; implements:HandlerR.Core.Dispatch.IRequestPostProcessorRunner]
+  C HandlerR.Core.Dispatch.RequestPostProcessorRunner(System.Collections.Generic.IReadOnlyDictionary`2[System.Type,HandlerR.Core.Dispatch.IProcessorInvoker])
+  M HandlerR.Core.Dispatch.RequestPostProcessorRunner.RunAsync`0(System.Object, System.Object, System.IServiceProvider, System.Threading.CancellationToken) -> System.Threading.Tasks.ValueTask
+T HandlerR.Core.Dispatch.RequestPreProcessorRunner [sealed; implements:HandlerR.Core.Dispatch.IRequestPreProcessorRunner]
+  C HandlerR.Core.Dispatch.RequestPreProcessorRunner(System.Collections.Generic.IReadOnlyDictionary`2[System.Type,HandlerR.Core.Dispatch.IProcessorInvoker])
+  M HandlerR.Core.Dispatch.RequestPreProcessorRunner.RunAsync`0(System.Object, System.IServiceProvider, System.Threading.CancellationToken) -> System.Threading.Tasks.ValueTask
+T HandlerR.Core.Dispatch.StreamHandlerEntry
+  P HandlerR.Core.Dispatch.StreamHandlerEntry.HandlerServiceType : System.Type (get)
+  P HandlerR.Core.Dispatch.StreamHandlerEntry.ItemType : System.Type (get)
+  P HandlerR.Core.Dispatch.StreamHandlerEntry.RequestType : System.Type (get)
+T HandlerR.Core.Dispatch.StreamHandlerEntry`1 [base:HandlerR.Core.Dispatch.StreamHandlerEntry]
+  M HandlerR.Core.Dispatch.StreamHandlerEntry`1.InvokeStream`0(System.Object, System.IServiceProvider, System.Threading.CancellationToken) -> System.Collections.Generic.IAsyncEnumerable`1[TResponse]
+  P HandlerR.Core.Dispatch.StreamHandlerEntry`1.ItemType : System.Type (get)
+T HandlerR.Core.Dispatch.StreamHandlerEntry`2 [sealed; base:]
+  C HandlerR.Core.Dispatch.StreamHandlerEntry`2()
+  M HandlerR.Core.Dispatch.StreamHandlerEntry`2.InvokeStream`0(System.Object, System.IServiceProvider, System.Threading.CancellationToken) -> System.Collections.Generic.IAsyncEnumerable`1[TResponse]
+  P HandlerR.Core.Dispatch.StreamHandlerEntry`2.HandlerServiceType : System.Type (get)
+  P HandlerR.Core.Dispatch.StreamHandlerEntry`2.RequestType : System.Type (get)
+T HandlerR.Core.HandlerRDiagnostics [static]
+  F static HandlerR.Core.HandlerRDiagnostics.ActivitySource : System.Diagnostics.ActivitySource
+  F static HandlerR.Core.HandlerRDiagnostics.FailureCount : System.Diagnostics.Metrics.Counter`1[System.Int64]
+  F static HandlerR.Core.HandlerRDiagnostics.Meter : System.Diagnostics.Metrics.Meter
+  F static HandlerR.Core.HandlerRDiagnostics.PublishCount : System.Diagnostics.Metrics.Counter`1[System.Int64]
+  F static HandlerR.Core.HandlerRDiagnostics.SendCount : System.Diagnostics.Metrics.Counter`1[System.Int64]
+  F static HandlerR.Core.HandlerRDiagnostics.SendDuration : System.Diagnostics.Metrics.Histogram`1[System.Double]
+  F static HandlerR.Core.HandlerRDiagnostics.SourceName : System.String
+T HandlerR.Core.HandlerRDispatcher [sealed; implements:HandlerR.Abstractions.IDispatcher+HandlerR.Abstractions.IPublisher+HandlerR.Abstractions.ISender]
+  C HandlerR.Core.HandlerRDispatcher(HandlerR.Core.Dispatch.DispatchTables, System.IServiceProvider, HandlerR.Core.Dispatch.IRequestPreProcessorRunner, HandlerR.Core.Dispatch.IRequestPostProcessorRunner)
+  M HandlerR.Core.HandlerRDispatcher.PublishAsync`1(TNotification, System.Threading.CancellationToken) -> System.Threading.Tasks.ValueTask
+  M HandlerR.Core.HandlerRDispatcher.SendAsync`1(HandlerR.Contracts.IRequest`1[TResponse], System.Threading.CancellationToken) -> System.Threading.Tasks.ValueTask`1[TResponse]
+  M HandlerR.Core.HandlerRDispatcher.StreamAsync`1(HandlerR.Contracts.IStreamRequest`1[TResponse], System.Threading.CancellationToken) -> System.Collections.Generic.IAsyncEnumerable`1[TResponse]
+T HandlerR.Core.Publishing.AggregatingParallelPublisher [sealed; implements:HandlerR.Abstractions.IConcurrentNotificationPublisher+HandlerR.Abstractions.INotificationPublisher]
+  C HandlerR.Core.Publishing.AggregatingParallelPublisher()
+  M HandlerR.Core.Publishing.AggregatingParallelPublisher.PublishAsync`0(System.Collections.Generic.IReadOnlyList`1[HandlerR.Abstractions.NotificationHandlerExecutor], HandlerR.Contracts.INotification, System.Threading.CancellationToken) -> System.Threading.Tasks.ValueTask
+  P HandlerR.Core.Publishing.AggregatingParallelPublisher.Instance : HandlerR.Core.Publishing.AggregatingParallelPublisher (get)
+T HandlerR.Core.Publishing.ParallelPublisher [sealed; implements:HandlerR.Abstractions.IConcurrentNotificationPublisher+HandlerR.Abstractions.INotificationPublisher]
+  C HandlerR.Core.Publishing.ParallelPublisher()
+  M HandlerR.Core.Publishing.ParallelPublisher.PublishAsync`0(System.Collections.Generic.IReadOnlyList`1[HandlerR.Abstractions.NotificationHandlerExecutor], HandlerR.Contracts.INotification, System.Threading.CancellationToken) -> System.Threading.Tasks.ValueTask
+  P HandlerR.Core.Publishing.ParallelPublisher.Instance : HandlerR.Core.Publishing.ParallelPublisher (get)
+T HandlerR.Core.Publishing.SequentialPublisher [sealed; implements:HandlerR.Abstractions.INotificationPublisher]
+  C HandlerR.Core.Publishing.SequentialPublisher()
+  M HandlerR.Core.Publishing.SequentialPublisher.PublishAsync`0(System.Collections.Generic.IReadOnlyList`1[HandlerR.Abstractions.NotificationHandlerExecutor], HandlerR.Contracts.INotification, System.Threading.CancellationToken) -> System.Threading.Tasks.ValueTask
+  P HandlerR.Core.Publishing.SequentialPublisher.Instance : HandlerR.Core.Publishing.SequentialPublisher (get)
+
+# HandlerR.DependencyInjection
+T HandlerR.DependencyInjection.BehaviorClosingStrategy [sealed]
+  F HandlerR.DependencyInjection.BehaviorClosingStrategy.value__ : System.Int32
+  F static HandlerR.DependencyInjection.BehaviorClosingStrategy.CloseForScannedRequests : HandlerR.DependencyInjection.BehaviorClosingStrategy
+  F static HandlerR.DependencyInjection.BehaviorClosingStrategy.CloseInContainer : HandlerR.DependencyInjection.BehaviorClosingStrategy
+T HandlerR.DependencyInjection.GeneratedExceptionAction [sealed]
+  C HandlerR.DependencyInjection.GeneratedExceptionAction(System.Type, System.Type)
+  M HandlerR.DependencyInjection.GeneratedExceptionAction.Deconstruct`0(System.Type&, System.Type&) -> System.Void
+  M HandlerR.DependencyInjection.GeneratedExceptionAction.Equals`0(HandlerR.DependencyInjection.GeneratedExceptionAction) -> System.Boolean
+  M HandlerR.DependencyInjection.GeneratedExceptionAction.Equals`0(System.Object) -> System.Boolean
+  M HandlerR.DependencyInjection.GeneratedExceptionAction.GetHashCode`0() -> System.Int32
+  M HandlerR.DependencyInjection.GeneratedExceptionAction.ToString`0() -> System.String
+  P HandlerR.DependencyInjection.GeneratedExceptionAction.ExceptionType : System.Type (getset)
+  P HandlerR.DependencyInjection.GeneratedExceptionAction.RequestType : System.Type (getset)
+T HandlerR.DependencyInjection.GeneratedExceptionHandler [sealed]
+  C HandlerR.DependencyInjection.GeneratedExceptionHandler(System.Type, System.Type, System.Type)
+  M HandlerR.DependencyInjection.GeneratedExceptionHandler.Deconstruct`0(System.Type&, System.Type&, System.Type&) -> System.Void
+  M HandlerR.DependencyInjection.GeneratedExceptionHandler.Equals`0(HandlerR.DependencyInjection.GeneratedExceptionHandler) -> System.Boolean
+  M HandlerR.DependencyInjection.GeneratedExceptionHandler.Equals`0(System.Object) -> System.Boolean
+  M HandlerR.DependencyInjection.GeneratedExceptionHandler.GetHashCode`0() -> System.Int32
+  M HandlerR.DependencyInjection.GeneratedExceptionHandler.ToString`0() -> System.String
+  P HandlerR.DependencyInjection.GeneratedExceptionHandler.ExceptionType : System.Type (getset)
+  P HandlerR.DependencyInjection.GeneratedExceptionHandler.RequestType : System.Type (getset)
+  P HandlerR.DependencyInjection.GeneratedExceptionHandler.ResponseType : System.Type (getset)
+T HandlerR.DependencyInjection.GeneratedRegistration [sealed]
+  C HandlerR.DependencyInjection.GeneratedRegistration()
+  P HandlerR.DependencyInjection.GeneratedRegistration.ExceptionActions : System.Collections.Generic.IReadOnlyList`1[HandlerR.DependencyInjection.GeneratedExceptionAction] (getset)
+  P HandlerR.DependencyInjection.GeneratedRegistration.ExceptionHandlers : System.Collections.Generic.IReadOnlyList`1[HandlerR.DependencyInjection.GeneratedExceptionHandler] (getset)
+  P HandlerR.DependencyInjection.GeneratedRegistration.Services : System.Collections.Generic.IReadOnlyList`1[HandlerR.DependencyInjection.GeneratedServiceRegistration] (getset)
+  P HandlerR.DependencyInjection.GeneratedRegistration.Tables : HandlerR.Core.Dispatch.DispatchTables (getset)
+T HandlerR.DependencyInjection.GeneratedServiceRegistration [sealed]
+  C HandlerR.DependencyInjection.GeneratedServiceRegistration(System.Type, System.Type, Microsoft.Extensions.DependencyInjection.ServiceLifetime)
+  M HandlerR.DependencyInjection.GeneratedServiceRegistration.Deconstruct`0(System.Type&, System.Type&, Microsoft.Extensions.DependencyInjection.ServiceLifetime&) -> System.Void
+  M HandlerR.DependencyInjection.GeneratedServiceRegistration.Equals`0(HandlerR.DependencyInjection.GeneratedServiceRegistration) -> System.Boolean
+  M HandlerR.DependencyInjection.GeneratedServiceRegistration.Equals`0(System.Object) -> System.Boolean
+  M HandlerR.DependencyInjection.GeneratedServiceRegistration.GetHashCode`0() -> System.Int32
+  M HandlerR.DependencyInjection.GeneratedServiceRegistration.ToString`0() -> System.String
+  P HandlerR.DependencyInjection.GeneratedServiceRegistration.ImplementationType : System.Type (getset)
+  P HandlerR.DependencyInjection.GeneratedServiceRegistration.Lifetime : Microsoft.Extensions.DependencyInjection.ServiceLifetime (getset)
+  P HandlerR.DependencyInjection.GeneratedServiceRegistration.ServiceType : System.Type (getset)
+T HandlerR.DependencyInjection.HandlerRConfiguration [sealed]
+  C HandlerR.DependencyInjection.HandlerRConfiguration()
+  M HandlerR.DependencyInjection.HandlerRConfiguration.AddBehavior`1(Microsoft.Extensions.DependencyInjection.ServiceLifetime) -> HandlerR.DependencyInjection.HandlerRConfiguration
+  M HandlerR.DependencyInjection.HandlerRConfiguration.AddOpenBehavior`0(System.Type, Microsoft.Extensions.DependencyInjection.ServiceLifetime) -> HandlerR.DependencyInjection.HandlerRConfiguration
+  M HandlerR.DependencyInjection.HandlerRConfiguration.AddOpenStreamBehavior`0(System.Type, Microsoft.Extensions.DependencyInjection.ServiceLifetime) -> HandlerR.DependencyInjection.HandlerRConfiguration
+  M HandlerR.DependencyInjection.HandlerRConfiguration.AddRequestPostProcessor`1() -> HandlerR.DependencyInjection.HandlerRConfiguration
+  M HandlerR.DependencyInjection.HandlerRConfiguration.AddRequestPreProcessor`1() -> HandlerR.DependencyInjection.HandlerRConfiguration
+  M HandlerR.DependencyInjection.HandlerRConfiguration.AddStreamBehavior`1(Microsoft.Extensions.DependencyInjection.ServiceLifetime) -> HandlerR.DependencyInjection.HandlerRConfiguration
+  M HandlerR.DependencyInjection.HandlerRConfiguration.AddValidatorAdapter`0(System.Type) -> HandlerR.DependencyInjection.HandlerRConfiguration
+  M HandlerR.DependencyInjection.HandlerRConfiguration.RegisterFromAssemblyContaining`1() -> HandlerR.DependencyInjection.HandlerRConfiguration
+  M HandlerR.DependencyInjection.HandlerRConfiguration.RegisterFrom`0(System.Reflection.Assembly[]) -> HandlerR.DependencyInjection.HandlerRConfiguration
+  M HandlerR.DependencyInjection.HandlerRConfiguration.Register`0(System.Type, System.Type) -> HandlerR.DependencyInjection.HandlerRConfiguration
+  P HandlerR.DependencyInjection.HandlerRConfiguration.AllowSingletonLifetime : System.Boolean (getset)
+  P HandlerR.DependencyInjection.HandlerRConfiguration.Assemblies : System.Collections.Generic.IReadOnlyList`1[System.Reflection.Assembly] (get)
+  P HandlerR.DependencyInjection.HandlerRConfiguration.AutoRegisterRequestProcessors : System.Boolean (getset)
+  P HandlerR.DependencyInjection.HandlerRConfiguration.BehaviorClosingStrategy : HandlerR.DependencyInjection.BehaviorClosingStrategy (getset)
+  P HandlerR.DependencyInjection.HandlerRConfiguration.Behaviors : System.Collections.Generic.IReadOnlyList`1[HandlerR.DependencyInjection.HandlerROpenBehavior] (get)
+  P HandlerR.DependencyInjection.HandlerRConfiguration.DispatcherImplementationType : System.Type (getset)
+  P HandlerR.DependencyInjection.HandlerRConfiguration.EnableStartupValidation : System.Boolean (getset)
+  P HandlerR.DependencyInjection.HandlerRConfiguration.ExceptionActionStrategy : HandlerR.Abstractions.ExceptionActionStrategy (getset)
+  P HandlerR.DependencyInjection.HandlerRConfiguration.ExplicitHandlers : System.Collections.Generic.IReadOnlyList`1[System.ValueTuple`2[System.Type,System.Type]] (get)
+  P HandlerR.DependencyInjection.HandlerRConfiguration.IsolateNotificationHandlerScopes : System.Nullable`1[System.Boolean] (getset)
+  P HandlerR.DependencyInjection.HandlerRConfiguration.Lifetime : Microsoft.Extensions.DependencyInjection.ServiceLifetime (getset)
+  P HandlerR.DependencyInjection.HandlerRConfiguration.MaxGenericTypeParameters : System.Int32 (getset)
+  P HandlerR.DependencyInjection.HandlerRConfiguration.MaxGenericTypeRegistrations : System.Int32 (getset)
+  P HandlerR.DependencyInjection.HandlerRConfiguration.MaxTypesClosing : System.Int32 (getset)
+  P HandlerR.DependencyInjection.HandlerRConfiguration.NotificationPublisher : HandlerR.Abstractions.INotificationPublisher (getset)
+  P HandlerR.DependencyInjection.HandlerRConfiguration.NotificationPublisherType : System.Type (getset)
+  P HandlerR.DependencyInjection.HandlerRConfiguration.PostProcessors : System.Collections.Generic.IReadOnlyList`1[System.Type] (get)
+  P HandlerR.DependencyInjection.HandlerRConfiguration.PreProcessors : System.Collections.Generic.IReadOnlyList`1[System.Type] (get)
+  P HandlerR.DependencyInjection.HandlerRConfiguration.RegisterGenericHandlers : System.Boolean (getset)
+  P HandlerR.DependencyInjection.HandlerRConfiguration.RegistrationTimeout : System.Int32 (getset)
+  P HandlerR.DependencyInjection.HandlerRConfiguration.StreamBehaviors : System.Collections.Generic.IReadOnlyList`1[HandlerR.DependencyInjection.HandlerROpenBehavior] (get)
+  P HandlerR.DependencyInjection.HandlerRConfiguration.TypeEvaluator : System.Func`2[System.Type,System.Boolean] (getset)
+  P HandlerR.DependencyInjection.HandlerRConfiguration.ValidatorAdapters : System.Collections.Generic.IReadOnlyList`1[System.Type] (get)
+T HandlerR.DependencyInjection.HandlerROpenBehavior [sealed]
+  C HandlerR.DependencyInjection.HandlerROpenBehavior(System.Type, Microsoft.Extensions.DependencyInjection.ServiceLifetime)
+  M HandlerR.DependencyInjection.HandlerROpenBehavior.<Clone>$`0() -> HandlerR.DependencyInjection.HandlerROpenBehavior
+  M HandlerR.DependencyInjection.HandlerROpenBehavior.Deconstruct`0(System.Type&, Microsoft.Extensions.DependencyInjection.ServiceLifetime&) -> System.Void
+  M HandlerR.DependencyInjection.HandlerROpenBehavior.Equals`0(HandlerR.DependencyInjection.HandlerROpenBehavior) -> System.Boolean
+  M HandlerR.DependencyInjection.HandlerROpenBehavior.Equals`0(System.Object) -> System.Boolean
+  M HandlerR.DependencyInjection.HandlerROpenBehavior.GetHashCode`0() -> System.Int32
+  M HandlerR.DependencyInjection.HandlerROpenBehavior.ToString`0() -> System.String
+  P HandlerR.DependencyInjection.HandlerROpenBehavior.BehaviorType : System.Type (getset)
+  P HandlerR.DependencyInjection.HandlerROpenBehavior.Lifetime : Microsoft.Extensions.DependencyInjection.ServiceLifetime (getset)
+T HandlerR.DependencyInjection.HandlerRServiceCollectionExtensions [static]
+  M static HandlerR.DependencyInjection.HandlerRServiceCollectionExtensions.AddHandlerR`0(Microsoft.Extensions.DependencyInjection.IServiceCollection, HandlerR.DependencyInjection.GeneratedRegistration, System.Action`1[HandlerR.DependencyInjection.HandlerRConfiguration]) -> Microsoft.Extensions.DependencyInjection.IServiceCollection
+  M static HandlerR.DependencyInjection.HandlerRServiceCollectionExtensions.AddHandlerR`0(Microsoft.Extensions.DependencyInjection.IServiceCollection, System.Action`1[HandlerR.DependencyInjection.HandlerRConfiguration]) -> Microsoft.Extensions.DependencyInjection.IServiceCollection
+
+# HandlerR.FluentValidation
+T HandlerR.FluentValidation.FluentValidationHandlerRExtensions [static]
+  M static HandlerR.FluentValidation.FluentValidationHandlerRExtensions.AddFluentValidation`0(HandlerR.DependencyInjection.HandlerRConfiguration) -> HandlerR.DependencyInjection.HandlerRConfiguration
+T HandlerR.FluentValidation.FluentValidationRequestValidator`1 [sealed; implements:HandlerR.Abstractions.IRequestValidator`1[TRequest]]
+  C HandlerR.FluentValidation.FluentValidationRequestValidator`1(System.Collections.Generic.IEnumerable`1[FluentValidation.IValidator`1[TRequest]])
+  M HandlerR.FluentValidation.FluentValidationRequestValidator`1.ValidateAsync`0(TRequest, System.Threading.CancellationToken) -> System.Threading.Tasks.ValueTask`1[System.Collections.Generic.IReadOnlyList`1[HandlerR.Abstractions.ValidationError]]

@@ -1,9 +1,9 @@
-# Conduit 功能对标矩阵
+# HandlerR 功能对标矩阵
 
 基准：MediatR 15.0.0 + MediatR.Contracts 2.0.1。
 状态：**✅ 对齐**（功能与语义等价，API 形状独立）、**⬆️ 增强**、**⛔ 有意不对齐**。
 
-每行后面的「验证」列指向把它钉住的测试（`tests/Conduit.Tests` / `Conduit.GeneratorTests`）。
+每行后面的「验证」列指向把它钉住的测试（`tests/HandlerR.Tests` / `HandlerR.GeneratorTests`）。
 
 ## 1. 消息模型与分发
 
@@ -23,7 +23,7 @@
 | 12 | `IStreamPipelineBehavior<T,R>`（独立建链） | ✅ | `StreamTests.Stream_behaviors_wrap_each_item` |
 | 13 | `IPipelineBehavior<T,R>` + `RequestHandlerDelegate<T>`（逆序折叠） | ✅ | `SendTests.Behaviors_execute_outside_in_with_declaration_order` |
 | 14 | 开放 Behavior 多注册 | ✅ | `DependencyInjectionTests`（多个开放行为） |
-| 15 | `ConduitOpenBehavior`（Type + Lifetime） | ✅ | `Configuration/BehaviorClosingStrategy.cs` |
+| 15 | `HandlerROpenBehavior`（Type + Lifetime） | ✅ | `Configuration/BehaviorClosingStrategy.cs` |
 | 16 | 泛型约束推断 + 嵌套泛型参数推断 | ✅ | `DependencyInjectionTests.Nested_generic_parameters_are_inferred_when_closing_behavior` |
 | 17 | `BehaviorClosingStrategy` 两值 | ✅ | `CloseInContainer_strategy_registers_open_generic_behavior` |
 | 18 | 泛型约束筛选（`where TRequest : ICacheable`） | ✅ | `Generic_constraints_filter_which_requests_a_behavior_applies_to` |
@@ -40,7 +40,7 @@
 | 24 | `RegisterFrom` / `RegisterFromAssemblyContaining` | ✅ | 全部 DI 测试 |
 | 25 | `TypeEvaluator` 类型过滤（默认 `t => true`） | ✅ | `TypeEvaluator_excludes_filtered_handlers` |
 | 26 | `Lifetime`（默认 Transient，Singleton 需审查） | ✅ | `Scoped_lifetime_resolves_handlers_per_scope`、`Singleton_lifetime_requires_explicit_review` |
-| 27 | `DispatcherImplementationType` | ✅ | `ConduitRegistrar.ValidateConfiguration` |
+| 27 | `DispatcherImplementationType` | ✅ | `HandlerRRegistrar.ValidateConfiguration` |
 | 28 | `NotificationPublisher` 实例 / `NotificationPublisherType` 类型 | ✅ | `Publisher_type_takes_precedence_over_instance` |
 | 29 | `AutoRegisterRequestProcessors`（默认 false） | ✅ | `ProcessorTests` 三条 |
 | 30 | 显式注册 Behavior / Pre / Post（顺序 = 由外到内） | ✅ | `ProcessorTests.Pre_processor_runs_before_behaviors_and_post_after` |
@@ -54,7 +54,7 @@
 | 38 | 反射容错（不可读类型跳过） | ✅ | `AssemblyScanner.SafeGetTypes` + 单类型 try/catch |
 | 39 | 不要求 `ILoggerFactory` | ⬆️ | 依赖 `ActivitySource` / `Meter`，无 logger 依赖 |
 | 40 | 零第三方运行时依赖 | ⬆️ | `ArchitectureTests` 依赖断言 |
-| 41 | 独立契约包 `Conduit.Contracts` | ✅ | `ArchitectureTests.Contracts_exposes_exactly_six_public_types` |
+| 41 | 独立契约包 `HandlerR.Contracts` | ✅ | `ArchitectureTests.Contracts_exposes_exactly_six_public_types` |
 | 42 | 契约包多目标（netstandard2.0） | ⛔ | 只发 `net10.0`，无历史包袱 |
 
 ## 3. 配置面逐项对照（默认值）
@@ -62,7 +62,7 @@
 | 属性 | 默认值 | 备注 |
 | --- | --- | --- |
 | `TypeEvaluator` | `t => true` | — |
-| `DispatcherImplementationType` | `typeof(ConduitDispatcher)` | 可替换 |
+| `DispatcherImplementationType` | `typeof(HandlerRDispatcher)` | 可替换 |
 | `NotificationPublisher` | `SequentialPublisher.Instance` | 无状态共享实例 |
 | `NotificationPublisherType` | `null` | 优先于实例 |
 | `Lifetime` | `Transient` | `Singleton` 需 `AllowSingletonLifetime` |
@@ -79,7 +79,7 @@
 | `IsolateNotificationHandlerScopes` | `null`（自动） | 并发发布器下自动开启 |
 | 许可相关（`LicenseKey` 等） | ⛔ 不提供 | 独立库无许可机制 |
 
-## 4. 契约面对照（Conduit.Contracts）
+## 4. 契约面对照（HandlerR.Contracts）
 
 | 类型 | 状态 | 说明 |
 | --- | --- | --- |

@@ -1,0 +1,37 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <HandlerRAotCompatible>true</HandlerRAotCompatible>
+    <IsPackable>true</IsPackable>
+    <PackageId>HandlerR.FluentValidation</PackageId>
+    <Description>Optional FluentValidation adapter for HandlerR. Implemented in-house; does not depend on any third-party mediator integration package.</Description>
+    <PackageReadmeFile>README.md</PackageReadmeFile>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="FluentValidation" />
+    <None Include="README.md" Pack="true" PackagePath="/" />
+  </ItemGroup>
+
+  <!-- 编译期需要内核心类型 -->
+  <ItemGroup>
+    <ProjectReference Include="../HandlerR.Abstractions/HandlerR.Abstractions.csproj" PrivateAssets="all" />
+    <ProjectReference Include="../HandlerR.Core/HandlerR.Core.csproj" PrivateAssets="all" />
+    <ProjectReference Include="../HandlerR.DependencyInjection/HandlerR.DependencyInjection.csproj" PrivateAssets="all" />
+  </ItemGroup>
+
+  <!-- 包依赖只指向主包（区间），避免暴露内部程序集名作为包 ID -->
+  <ItemGroup>
+    <ProjectReference Include="../HandlerR/HandlerR.csproj" Version="[1.0.0, 2.0.0)" />
+  </ItemGroup>
+
+  <!-- 与主包一致：把对 HandlerR 的依赖落成 [1.0.0, 2.0.0) 区间 -->
+  <Target Name="HandlerRPinMainPackageVersionRange" AfterTargets="_GetProjectReferenceVersions">
+    <ItemGroup>
+      <_ProjectReferencesWithVersions Update="$([System.IO.Path]::GetFullPath('$(MSBuildThisFileDirectory)..\HandlerR\HandlerR.csproj'))">
+        <ProjectVersion>[1.0.0, 2.0.0)</ProjectVersion>
+      </_ProjectReferencesWithVersions>
+    </ItemGroup>
+  </Target>
+
+</Project>

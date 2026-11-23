@@ -1,0 +1,17 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <HandlerRAotCompatible>true</HandlerRAotCompatible>
+    <IsPackable>true</IsPackable>
+    <PackageId>HandlerR.Contracts</PackageId>
+    <Description>Contracts package for requests, responses, and notifications.</Description>
+    <PackageReadmeFile>README.md</PackageReadmeFile>
+    <PackageTags>contracts;cqrs;messaging;requests;notifications</PackageTags>
+  </PropertyGroup>
+
+  <!-- 红线：本包必须零依赖，架构合规测试会断言依赖列表为空 -->
+  <ItemGroup>
+    <None Include="README.md" Pack="true" PackagePath="/" />
+  </ItemGroup>
+
+</Project>

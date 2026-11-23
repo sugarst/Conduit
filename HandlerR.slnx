@@ -1,0 +1,22 @@
+<Solution>
+  <Folder Name="/benchmarks/">
+    <Project Path="benchmarks/HandlerR.Benchmarks/HandlerR.Benchmarks.csproj" />
+  </Folder>
+  <Folder Name="/samples/">
+    <Project Path="samples/HandlerR.Samples/HandlerR.Samples.csproj" />
+  </Folder>
+  <Folder Name="/src/">
+    <Project Path="src/HandlerR.Abstractions/HandlerR.Abstractions.csproj" />
+    <Project Path="src/HandlerR.Contracts/HandlerR.Contracts.csproj" />
+    <Project Path="src/HandlerR.Core/HandlerR.Core.csproj" />
+    <Project Path="src/HandlerR.DependencyInjection/HandlerR.DependencyInjection.csproj" />
+    <Project Path="src/HandlerR.FluentValidation/HandlerR.FluentValidation.csproj" />
+    <Project Path="src/HandlerR.SourceGenerator/HandlerR.SourceGenerator.csproj" />
+  </Folder>
+  <Folder Name="/tests/">
+    <Project Path="tests/HandlerR.AotTests/HandlerR.AotTests.csproj" />
+    <Project Path="tests/HandlerR.GeneratorTests/HandlerR.GeneratorTests.csproj" />
+    <Project Path="tests/HandlerR.Tests/HandlerR.Tests.csproj" />
+    <Project Path="tests/HandlerR.TestSupport/HandlerR.TestSupport.csproj" />
+  </Folder>
+</Solution>

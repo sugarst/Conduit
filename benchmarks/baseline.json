@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "description": "Conduit 调度热路径性能基线。由 BenchmarkDotNet ShortRun 在本机实测生成，用于 CI 回归门禁（止损条件：超出基线 2 倍即失败）。",
+  "description": "HandlerR 调度热路径性能基线。由 BenchmarkDotNet ShortRun 在本机实测生成，用于 CI 回归门禁（止损条件：超出基线 2 倍即失败）。",
   "generatedAt": "2026-11-22",
   "environment": {
     "runtime": ".NET 10.0.15",

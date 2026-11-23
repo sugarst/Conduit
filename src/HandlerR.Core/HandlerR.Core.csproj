@@ -1,0 +1,19 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <HandlerRAotCompatible>true</HandlerRAotCompatible>
+    <IsPackable>false</IsPackable>
+    <PackageId>HandlerR.Core</PackageId>
+    <Description>Dispatch kernel: dispatch tables, pipeline composition, notification publishing, exception mapping and built-in behaviors. Pure BCL, no DI dependency.</Description>
+  </PropertyGroup>
+
+  <!--
+    刻意不引用 Microsoft.Extensions.DependencyInjection.Abstractions：
+    内核只接受 System.IServiceProvider，通过 typeof(IEnumerable<T>) 解析多实现，
+    因此可脱离任何容器单测，也不影响 Native AOT。
+  -->
+  <ItemGroup>
+    <ProjectReference Include="../HandlerR.Abstractions/HandlerR.Abstractions.csproj" />
+  </ItemGroup>
+
+</Project>

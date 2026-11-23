@@ -1,7 +1,7 @@
-# Conduit — 进程内消息调度库
+# HandlerR — 进程内消息调度库
 
 > **Independent implementation. Not affiliated with or derived from MediatR.**
-> 独立实现，Apache-2.0 许可。技术方案见 [`docs/Conduit-类库技术方案.md`](./docs/Conduit-类库技术方案.md)（v3.1）。
+> 独立实现，Apache-2.0 许可。技术方案见 [`docs/HandlerR-类库技术方案.md`](./docs/HandlerR-类库技术方案.md)（v3.1）。
 
 ## 这是什么
 
@@ -22,7 +22,7 @@ public sealed class PingHandler : IRequestHandler<PingQuery, int>
 }
 
 var services = new ServiceCollection();
-services.AddConduit(cfg =>
+services.AddHandlerR(cfg =>
 {
     cfg.RegisterFromAssemblyContaining<PingQuery>();
     cfg.AddOpenBehavior(typeof(TelemetryBehavior<,>));
@@ -34,13 +34,13 @@ var dispatcher = provider.GetRequiredService<IDispatcher>();
 var result = await dispatcher.SendAsync(new PingQuery(41));   // 41
 ```
 
-可运行样例：`dotnet run --project samples/Conduit.Samples`（查询缓存、事务 + 通知、校验短路、流式）。
+可运行样例：`dotnet run --project samples/HandlerR.Samples`（查询缓存、事务 + 通知、校验短路、流式）。
 
 ## 使用指南
 
 ### 调用链概览
 
-Conduit 的调用链如下。你的代码只接触最上层的 `ISender` / `IPublisher`，中间的调度、行为链和作用域隔离都藏在库内：
+HandlerR 的调用链如下。你的代码只接触最上层的 `ISender` / `IPublisher`，中间的调度、行为链和作用域隔离都藏在库内：
 
 ```mermaid
 flowchart LR
@@ -63,26 +63,26 @@ flowchart LR
 - 调度表在**启动期**（Mode A 反射扫描）或**编译期**（Mode B 源生成器）构建，热路径只做一次 `FrozenDictionary` 查找，零反射、零 `MakeGenericType`。
 - Behavior 按注册顺序**由外到内**包住 Handler，链上调用 `next()` 是无参委托；请求与流的 Behavior 注册表互不混用。
 - 并发发布通知时，库为每个 Handler 建独立 scope，避免多个线程共用同一个 `DbContext`。
-- Behavior **只能**经 `AddConduit` 配置注册，注册表外的实现会在启动期 fail-fast。
+- Behavior **只能**经 `AddHandlerR` 配置注册，注册表外的实现会在启动期 fail-fast。
 
 ### 前置条件与安装
 
 消费方项目必须是 **`net10.0`**（硬约束：本库只有单一 `net10.0` 资产，不支持 net8/net9/netframework）。
 
-主包已带齐 `Conduit.Contracts`（区间依赖）、Abstractions、Core、DI 运行时程序集，以及 `analyzers/dotnet/cs` 里的源生成器——**装一个包就够**。
+主包已带齐 `HandlerR.Contracts`（区间依赖）、Abstractions、Core、DI 运行时程序集，以及 `analyzers/dotnet/cs` 里的源生成器——**装一个包就够**。
 
 ```bash
 # 从 NuGet.org（发布后）
-dotnet add package Conduit
+dotnet add package HandlerR
 
 # 从本地构建产物（未发布时）
-dotnet add package Conduit --source D:/Projects/Github/Conduit/artifacts
+dotnet add package HandlerR --source D:/Projects/Github/HandlerR/artifacts
 
 # 可选：FluentValidation 校验适配器
-dotnet add package Conduit.FluentValidation
+dotnet add package HandlerR.FluentValidation
 ```
 
-只有一种例外：API 项目 / DTO 项目只想暴露消息类型、不想引入调度器时，单独装零依赖的 `Conduit.Contracts`。
+只有一种例外：API 项目 / DTO 项目只想暴露消息类型、不想引入调度器时，单独装零依赖的 `HandlerR.Contracts`。
 
 ### 四种消息形态
 
@@ -93,7 +93,7 @@ dotnet add package Conduit.FluentValidation
 | 通知（多播） | `INotification` | `INotificationHandler<T>.HandleAsync` | `await dispatcher.PublishAsync(n)` |
 | 流式 | `IStreamRequest<T>` | `IStreamRequestHandler<TReq, TRes>.HandleStreamAsync` | `await foreach (var x in dispatcher.StreamAsync(req))` |
 
-消息接口在 `Conduit.Contracts`，Handler / 门面接口在 `Conduit.Abstractions`，注册扩展在 `Conduit.DependencyInjection`。
+消息接口在 `HandlerR.Contracts`，Handler / 门面接口在 `HandlerR.Abstractions`，注册扩展在 `HandlerR.DependencyInjection`。
 
 **三个容易写错的点**：
 
@@ -106,9 +106,9 @@ dotnet add package Conduit.FluentValidation
 ### 完整示例：请求、命令、通知、流
 
 ```csharp
-using Conduit.Abstractions;
-using Conduit.Contracts;
-using Conduit.DependencyInjection;
+using HandlerR.Abstractions;
+using HandlerR.Contracts;
+using HandlerR.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection;
 
 // 消息
@@ -160,7 +160,7 @@ public sealed class BrowseHandler : IStreamRequestHandler<BrowseProducts, Produc
 
 // 注册（Mode A：启动期反射扫描）
 var services = new ServiceCollection();
-services.AddConduit(cfg => cfg.RegisterFrom(typeof(GetProductQuery).Assembly));
+services.AddHandlerR(cfg => cfg.RegisterFrom(typeof(GetProductQuery).Assembly));
 
 await using var provider = services.BuildServiceProvider(
     new ServiceProviderOptions { ValidateScopes = true });
@@ -183,7 +183,7 @@ await foreach (var item in dispatcher.StreamAsync(new BrowseProducts(3)))
 **注册顺序 = 执行顺序，先注册的在最外层**：
 
 ```csharp
-services.AddConduit(cfg =>
+services.AddHandlerR(cfg =>
 {
     cfg.RegisterFrom(typeof(GetProductQuery).Assembly);
 
@@ -226,7 +226,7 @@ cfg.AddOpenBehavior(typeof(TimingBehavior<,>));
 | `RetryBehavior` | `IRetryable` 且 `IIdempotent`（重试仅对幂等请求生效） |
 | `IdempotencyBehavior` | `IIdempotent` |
 
-强约束：**Behavior 只能通过 `ConduitConfiguration` 注册**。直接 `services.AddTransient<IPipelineBehavior<...>, ...>()` 会在启动期 fail-fast，以保证顺序可判定。
+强约束：**Behavior 只能通过 `HandlerRConfiguration` 注册**。直接 `services.AddTransient<IPipelineBehavior<...>, ...>()` 会在启动期 fail-fast，以保证顺序可判定。
 
 ### 异常映射
 
@@ -263,7 +263,7 @@ public sealed class GetProductValidator : AbstractValidator<GetProductQuery>
     public GetProductValidator() => RuleFor(x => x.Sku).NotEmpty();
 }
 
-services.AddConduit(cfg =>
+services.AddHandlerR(cfg =>
 {
     cfg.RegisterFrom(typeof(GetProductQuery).Assembly);
     cfg.AddFluentValidation();
@@ -277,52 +277,52 @@ services.AddConduit(cfg =>
 
 | 模式 | 机制 | 适用 | 入口 |
 | --- | --- | --- | --- |
-| **Mode A** | 启动期反射扫描一次，构建冻结调度表 | 常规 JIT 宿主 | `services.AddConduit(cfg => cfg.RegisterFrom(...))` |
-| **Mode B** | 增量源生成器在编译期生成处理器清单和调度入口 | Native AOT / 冷启动敏感 | `services.AddGeneratedConduit(cfg => ...)` |
+| **Mode A** | 启动期反射扫描一次，构建冻结调度表 | 常规 JIT 宿主 | `services.AddHandlerR(cfg => cfg.RegisterFrom(...))` |
+| **Mode B** | 增量源生成器在编译期生成处理器清单和调度入口 | Native AOT / 冷启动敏感 | `services.AddGeneratedHandlerR(cfg => ...)` |
 
 Mode B 无需额外引用生成器（主包已带 analyzers 资产），只需换入口：
 
 ```csharp
-using Conduit.Generated;   // AddGeneratedConduit 的命名空间
+using HandlerR.Generated;   // AddGeneratedHandlerR 的命名空间
 
-services.AddGeneratedConduit(cfg =>
+services.AddGeneratedHandlerR(cfg =>
 {
     // JIT 宿主可继续配置 Behavior 等扩展
     cfg.AddOpenBehavior(typeof(TelemetryBehavior<,>));
 });
 ```
 
-生成器会给缺少 Handler 等问题生成编译诊断。两种模式在 JIT 中共用 `ConduitDispatcher` 和 Behavior 管线。
+生成器会给缺少 Handler 等问题生成编译诊断。两种模式在 JIT 中共用 `HandlerRDispatcher` 和 Behavior 管线。
 
 Native AOT 使用源生成的静态注册，支持请求、流式请求和通知。当前 Behavior、请求前后处理器、异常策略以及通知处理器作用域隔离仍使用 JIT 的运行时注册路径。
 
 ### 可观测性
 
-库暴露 `ConduitDiagnostics.ActivitySource`（名称取 `Conduit.Core.ConduitDiagnostics.SourceName`）和 `Meter`，send / publish / stream 都会产生 Activity，标签遵循 OTel Messaging 语义。宿主侧订阅并导出到 OTel 后端即可——库本身**不引用任何 OTel 包**，零第三方运行时依赖。
+库暴露 `HandlerRDiagnostics.ActivitySource`（名称取 `HandlerR.Core.HandlerRDiagnostics.SourceName`）和 `Meter`，send / publish / stream 都会产生 Activity，标签遵循 OTel Messaging 语义。宿主侧订阅并导出到 OTel 后端即可——库本身**不引用任何 OTel 包**，零第三方运行时依赖。
 
 ### 建议的阅读顺序
 
-1. 先跑 `samples/Conduit.Samples`：覆盖缓存命中、事务 + 通知、校验短路、流式、可观测性五个场景，是最权威的用法参考。
+1. 先跑 `samples/HandlerR.Samples`：覆盖缓存命中、事务 + 通知、校验短路、流式、可观测性五个场景，是最权威的用法参考。
 2. 再对照 [`docs/FEATURES.md`](./docs/FEATURES.md) 的功能矩阵，确认需要的能力是 ✅ 还是 ⛔。
-3. 最后看 [`docs/Conduit-类库技术方案.md`](./docs/Conduit-类库技术方案.md) 第 5、6、9 节理解设计边界。
+3. 最后看 [`docs/HandlerR-类库技术方案.md`](./docs/HandlerR-类库技术方案.md) 第 5、6、9 节理解设计边界。
 
 ## 解决方案结构
 
 ```
 src/
-  Conduit.Contracts           net10.0   消息形状契约，6 个类型，零依赖
-  Conduit.Abstractions        net10.0   Handler / Behavior / Publisher / 门面 / 异常
-  Conduit.Core                net10.0   调度内核，仅 BCL（不引 DI 抽象包）
-  Conduit.DependencyInjection net10.0   注册、扫描、泛型护栏、启动诊断、作用域隔离
-  Conduit.SourceGenerator     netstandard2.0  增量源生成器（Roslyn 宿主约束，以 analyzers 资产并入主包）
-  Conduit.FluentValidation    net10.0   可选校验适配包
-  Conduit                     net10.0   主 NuGet 包（打包 Abstractions/Core/DI 三个程序集 + 源生成器）
+  HandlerR.Contracts           net10.0   消息形状契约，6 个类型，零依赖
+  HandlerR.Abstractions        net10.0   Handler / Behavior / Publisher / 门面 / 异常
+  HandlerR.Core                net10.0   调度内核，仅 BCL（不引 DI 抽象包）
+  HandlerR.DependencyInjection net10.0   注册、扫描、泛型护栏、启动诊断、作用域隔离
+  HandlerR.SourceGenerator     netstandard2.0  增量源生成器（Roslyn 宿主约束，以 analyzers 资产并入主包）
+  HandlerR.FluentValidation    net10.0   可选校验适配包
+  HandlerR                     net10.0   主 NuGet 包（打包 Abstractions/Core/DI 三个程序集 + 源生成器）
 tests/
-  Conduit.Tests               规格 / 并发 / DI / 架构合规（TUnit 1.87.12）
-  Conduit.GeneratorTests      源生成器端到端 + Roslyn 驱动诊断测试
-  Conduit.TestSupport         扫描与负向用例的独立程序集
-benchmarks/Conduit.Benchmarks BenchmarkDotNet 基线
-samples/Conduit.Samples       可运行示例
+  HandlerR.Tests               规格 / 并发 / DI / 架构合规（TUnit 1.87.12）
+  HandlerR.GeneratorTests      源生成器端到端 + Roslyn 驱动诊断测试
+  HandlerR.TestSupport         扫描与负向用例的独立程序集
+benchmarks/HandlerR.Benchmarks BenchmarkDotNet 基线
+samples/HandlerR.Samples       可运行示例
 scripts/                      合规与基准门禁（.NET 10 File-Based App）
 docs/                         技术方案、架构决策、功能对标矩阵
 .github/workflows/ci.yaml      CI 流水线
@@ -333,11 +333,11 @@ docs/                         技术方案、架构决策、功能对标矩阵
 ## 构建与验证
 
 ```bash
-dotnet build Conduit.slnx -c Release
-dotnet run --project tests/Conduit.Tests -c Release
-dotnet run --project tests/Conduit.GeneratorTests -c Release
-dotnet run --project samples/Conduit.Samples
-dotnet pack src/Conduit/Conduit.csproj -c Release -o artifacts
+dotnet build HandlerR.slnx -c Release
+dotnet run --project tests/HandlerR.Tests -c Release
+dotnet run --project tests/HandlerR.GeneratorTests -c Release
+dotnet run --project samples/HandlerR.Samples
+dotnet pack src/HandlerR/HandlerR.csproj -c Release -o artifacts
 ```
 
 测试栈统一 Microsoft.Testing.Platform（TUnit），不混用 VSTest。
@@ -355,11 +355,11 @@ dotnet run scripts/check_benchmark.cs -- --report <bdn-json>   # 基准回归门
 
 | 包 | 内容 | 包依赖 |
 | --- | --- | --- |
-| `Conduit.Contracts` | `lib/net10.0` 契约程序集 | **无**（零依赖，架构测试断言） |
-| `Conduit` | `lib/net10.0` 三个运行时程序集 + `analyzers/dotnet/cs` 源生成器 | `Conduit.Contracts [1.0.0, 2.0.0)`、`Microsoft.Extensions.DependencyInjection.Abstractions` |
-| `Conduit.FluentValidation` | 可选适配层 | `Conduit [1.0.0, 2.0.0)`、`FluentValidation` |
+| `HandlerR.Contracts` | `lib/net10.0` 契约程序集 | **无**（零依赖，架构测试断言） |
+| `HandlerR` | `lib/net10.0` 三个运行时程序集 + `analyzers/dotnet/cs` 源生成器 | `HandlerR.Contracts [1.0.0, 2.0.0)`、`Microsoft.Extensions.DependencyInjection.Abstractions` |
+| `HandlerR.FluentValidation` | 可选适配层 | `HandlerR [1.0.0, 2.0.0)`、`FluentValidation` |
 
-主包**不内嵌** `Conduit.Contracts.dll`，契约类型只由契约包提供——从包结构上排除"双包重复定义契约类型"导致的运行时类型不匹配。
+主包**不内嵌** `HandlerR.Contracts.dll`，契约类型只由契约包提供——从包结构上排除"双包重复定义契约类型"导致的运行时类型不匹配。
 
 ## 关键约定（评审可逐条检查）
 
@@ -367,10 +367,10 @@ dotnet run scripts/check_benchmark.cs -- --report <bdn-json>   # 基准回归门
 | --- | --- |
 | 零第三方运行时依赖 | 架构测试断言 `Contracts` 无包引用、`Core` 无 `Microsoft.Extensions*` |
 | 单一 TFM | 架构测试断言所有产品项目只声明 `net10.0`（生成器例外） |
-| 契约类型只定义一次 | 架构测试断言 `Conduit.Contracts` 恰好 6 个公开类型 |
+| 契约类型只定义一次 | 架构测试断言 `HandlerR.Contracts` 恰好 6 个公开类型 |
 | 公开 API 变更需批准 | `PublicApiSurfaceTests` 反射快照比对 `ApiSurface.approved.txt`，签名变动即失败 |
 | 无对标库痕迹 | 架构测试全局扫描 `src/`，`MediatR` 零命中 |
-| Behavior 顺序可判定 | 只允许经 `ConduitConfiguration` 注册；外部注册直接 fail-fast |
+| Behavior 顺序可判定 | 只允许经 `HandlerRConfiguration` 注册；外部注册直接 fail-fast |
 | Singleton 需审查 | 默认拒绝 `Lifetime = Singleton`，需显式 `AllowSingletonLifetime = true` |
 | 并行通知不共享 Scoped | 并发发布时每个处理器在独立作用域解析 |
 
@@ -382,7 +382,7 @@ dotnet run scripts/check_benchmark.cs -- --report <bdn-json>   # 基准回归门
 2. **无 `SendAsync(IRequest)` 非泛型重载**：`ICommand` 同时实现 `IRequest` 与 `IRequest<Unit>`，
    `SendAsync(command)` 直接推断 `Unit`，避免与非泛型重载产生调用二义性。
 3. **`CDI001`（缺 Handler）为 Warning 而非 Error**：Handler 可能位于其他程序集，报错会误伤多程序集解决方案。
-4. **`Conduit.DependencyInjection` 不声明 AOT 兼容**：反射扫描在设计上依赖运行时元数据，AOT 走 Mode B。
+4. **`HandlerR.DependencyInjection` 不声明 AOT 兼容**：反射扫描在设计上依赖运行时元数据，AOT 走 Mode B。
 
 ## 许可
 

@@ -1,0 +1,14 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <HandlerRAotCompatible>true</HandlerRAotCompatible>
+    <IsPackable>false</IsPackable>
+    <PackageId>HandlerR.Abstractions</PackageId>
+    <Description>Behavior contracts: handlers, pipeline behaviors, notification publishers, processors, validation and facades.</Description>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="../HandlerR.Contracts/HandlerR.Contracts.csproj" />
+  </ItemGroup>
+
+</Project>
