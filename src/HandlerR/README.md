@@ -39,9 +39,9 @@ var dto = await dispatcher.SendAsync(new GetOrderQuery(orderId), cancellationTok
 | 模式 | 机制 | 适用 | 入口 |
 | --- | --- | --- | --- |
 | **Mode A** | 启动期反射扫描一次，构建冻结调度表 | 常规 JIT 宿主 | `services.AddHandlerR(cfg => cfg.RegisterFrom(...))` |
-| **Mode B** | 增量源生成器在编译期产出调度表，零反射 | Native AOT / 冷启动敏感 | `services.AddGeneratedHandlerR(cfg => ...)`（`using HandlerR.Generated;`） |
+| **Mode B** | 增量源生成器在编译期产出调度表和处理器清单 | Native AOT / 冷启动敏感 | `services.AddGeneratedHandlerR()`（`using HandlerR.Generated;`） |
 
-两种模式的运行期语义完全一致：同一套 `HandlerRDispatcher`、同一套 Behavior 语义、同一套诊断。
+在 JIT 宿主中，两种模式共用 `HandlerRDispatcher`、Behavior 管线和诊断。JIT 宿主可以在 `AddGeneratedHandlerR` 的配置回调中注册 Behavior。
 
 ## 设计要点
 
@@ -58,7 +58,7 @@ var dto = await dispatcher.SendAsync(new GetOrderQuery(orderId), cancellationTok
 HandlerR.Contracts            消息形状（6 个类型），零依赖
 HandlerR                      主包：等于 Abstractions + Core + DependencyInjection
 HandlerR.FluentValidation     可选适配包（自研，不依赖任何第三方 mediator 集成包）
-HandlerR.SourceGenerator      增量源生成器（netstandard2.0，编译器加载）
+HandlerR.SourceGenerator      增量源生成器（netstandard2.0，随主包作为 analyzers 资产分发）
 ```
 
 架构合规由测试强制：依赖方向、单一 TFM、`Contracts` 公开类型数量、禁用包清单、零 `MediatR` 命中。
@@ -78,17 +78,15 @@ messaging.destination.name  = 处理器全名
 
 ## Native AOT
 
-```xml
-<ProjectReference Include="...\HandlerR.SourceGenerator.csproj"
-                  OutputItemType="Analyzer" ReferenceOutputAssembly="false" />
-```
+安装 `HandlerR` 主包即可获得源生成器。在启用 `PublishAot` 的宿主中使用生成的注册入口。
 
 ```csharp
-services.AddGeneratedHandlerR(cfg => cfg.AddOpenBehavior(typeof(TelemetryBehavior<,>)));
+using HandlerR.Generated;
+
+services.AddGeneratedHandlerR();
 ```
 
-Mode A 的反射扫描在设计上不做 AOT 声明（`HandlerR.DependencyInjection` 未开启 `IsAotCompatible`）；
-AOT 场景请使用 Mode B。裁剪警告清零是 CI 的 AOT 作业职责。
+静态注册支持请求、流式请求和默认顺序通知。Behavior（包括 `TelemetryBehavior` 和 FluentValidation 适配）、请求前后处理器、异常策略以及通知处理器作用域隔离需要 JIT 的运行时注册路径。
 
 ## 文档
 

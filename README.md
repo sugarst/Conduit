@@ -257,44 +257,48 @@ public sealed class AlertAction
 
 ### FluentValidation 适配器（可选）
 
-```csharp
-public sealed class GetProductValidator : AbstractValidator<GetProductQuery>
-{
-    public GetProductValidator() => RuleFor(x => x.Sku).NotEmpty();
-}
+安装 `HandlerR.FluentValidation`，再为已有的 `GetProductQuery` 和处理器注册校验器。
 
+```csharp
+using FluentValidation;
+using HandlerR.DependencyInjection;
+using HandlerR.FluentValidation;
+using Microsoft.Extensions.DependencyInjection;
+
+var services = new ServiceCollection();
+services.AddScoped<IValidator<GetProductQuery>, GetProductValidator>();
 services.AddHandlerR(cfg =>
 {
-    cfg.RegisterFrom(typeof(GetProductQuery).Assembly);
+    cfg.RegisterFromAssemblyContaining<GetProductHandler>();
     cfg.AddFluentValidation();
-    cfg.AddOpenBehavior(typeof(ValidationBehavior<,>));   // 让校验真正介入管线
 });
+
+public sealed class GetProductValidator : AbstractValidator<GetProductQuery>
+{
+    public GetProductValidator() => RuleFor(x => x.Sku).NotEmpty().WithErrorCode("SKU_REQUIRED");
+}
 ```
 
-校验失败抛 `RequestValidationException`，`Errors` 里带 `Identifier` / `Message` / `ErrorCode`。
+`AddFluentValidation()` 会注册校验行为和适配器。校验失败时，HandlerR 在调用处理器前抛出 `RequestValidationException`，`Errors` 包含 `Identifier`、`Message` 和 `ErrorCode`。
 
 ### 两条注册路径（Mode A / Mode B）
 
 | 模式 | 机制 | 适用 | 入口 |
 | --- | --- | --- | --- |
 | **Mode A** | 启动期反射扫描一次，构建冻结调度表 | 常规 JIT 宿主 | `services.AddHandlerR(cfg => cfg.RegisterFrom(...))` |
-| **Mode B** | 增量源生成器在编译期生成处理器清单和调度入口 | Native AOT / 冷启动敏感 | `services.AddGeneratedHandlerR(cfg => ...)` |
+| **Mode B** | 增量源生成器在编译期生成处理器清单和调度入口 | Native AOT / 冷启动敏感 | `services.AddGeneratedHandlerR()` |
 
-Mode B 无需额外引用生成器（主包已带 analyzers 资产），只需换入口：
+主包自带源生成器。Native AOT 宿主使用静态注册入口。
 
 ```csharp
-using HandlerR.Generated;   // AddGeneratedHandlerR 的命名空间
+using HandlerR.Generated;
 
-services.AddGeneratedHandlerR(cfg =>
-{
-    // JIT 宿主可继续配置 Behavior 等扩展
-    cfg.AddOpenBehavior(typeof(TelemetryBehavior<,>));
-});
+services.AddGeneratedHandlerR();
 ```
 
-生成器会给缺少 Handler 等问题生成编译诊断。两种模式在 JIT 中共用 `HandlerRDispatcher` 和 Behavior 管线。
+生成器会给缺少 Handler 等问题生成编译诊断。两种模式在 JIT 中共用 `HandlerRDispatcher` 和 Behavior 管线。JIT 宿主也可以在 `AddGeneratedHandlerR` 的配置回调中注册 Behavior。
 
-Native AOT 使用源生成的静态注册，支持请求、流式请求和通知。当前 Behavior、请求前后处理器、异常策略以及通知处理器作用域隔离仍使用 JIT 的运行时注册路径。
+Native AOT 使用源生成的静态注册，支持请求、流式请求和默认顺序通知。Behavior（包括 FluentValidation 适配）、请求前后处理器、异常策略以及通知处理器作用域隔离需要 JIT 的运行时注册路径。
 
 ### 可观测性
 
