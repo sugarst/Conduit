@@ -78,6 +78,91 @@ public class NotificationTests
     }
 
     [Test]
+    public async Task Parallel_publisher_cancels_running_peer_before_propagating_first_failure()
+    {
+        var failure = new InvalidOperationException("first failure");
+        var siblingStarted = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+        var releaseSibling = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+        var siblingCanceled = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+        var fail = new NotificationHandlerExecutor(async (_, _) =>
+        {
+            await siblingStarted.Task;
+            throw failure;
+        });
+        var sibling = new NotificationHandlerExecutor(async (_, token) =>
+        {
+            siblingStarted.SetResult();
+            try
+            {
+                await releaseSibling.Task.WaitAsync(token);
+            }
+            catch (OperationCanceledException) when (token.IsCancellationRequested)
+            {
+                siblingCanceled.TrySetResult();
+                throw;
+            }
+        });
+
+        var publish = ParallelPublisher.Instance
+            .PublishAsync([fail, sibling], new UnhandledNotification(), CancellationToken.None).AsTask();
+        bool canceledBeforeRelease;
+        try
+        {
+            canceledBeforeRelease = await Task.WhenAny(siblingCanceled.Task, Task.Delay(TimeSpan.FromSeconds(2)))
+                == siblingCanceled.Task;
+        }
+        finally
+        {
+            releaseSibling.TrySetResult();
+        }
+
+        var observed = await ExceptionCapture.CaptureAsync(
+            () => new ValueTask(publish.WaitAsync(TimeSpan.FromSeconds(2))));
+
+        await Assert.That(canceledBeforeRelease).IsTrue();
+        await Assert.That(ReferenceEquals(observed, failure)).IsTrue();
+    }
+
+    [Test]
+    public async Task Aggregating_publisher_propagates_cancellation_without_handler_failures()
+    {
+        using var cancellation = new CancellationTokenSource();
+        var waitForCancellation = new NotificationHandlerExecutor(
+            (_, token) => new ValueTask(Task.Delay(Timeout.InfiniteTimeSpan, token)));
+        var completed = new NotificationHandlerExecutor((_, _) => ValueTask.CompletedTask);
+        var publish = AggregatingParallelPublisher.Instance
+            .PublishAsync([waitForCancellation, completed], new UnhandledNotification(), cancellation.Token).AsTask();
+
+        await cancellation.CancelAsync();
+        var observed = await ExceptionCapture.CaptureAsync(
+            () => new ValueTask(publish.WaitAsync(TimeSpan.FromSeconds(2))));
+
+        await Assert.That(observed is OperationCanceledException).IsTrue();
+        await Assert.That(publish.IsCanceled).IsTrue();
+    }
+
+    [Test]
+    public async Task Aggregating_publisher_reports_handler_failure_when_another_handler_is_canceled()
+    {
+        using var cancellation = new CancellationTokenSource();
+        await cancellation.CancelAsync();
+        var failure = new InvalidOperationException("handler failure");
+        var fail = new NotificationHandlerExecutor((_, _) => throw failure);
+        var canceledHandlerInvoked = false;
+        var canceled = new NotificationHandlerExecutor((_, _) =>
+        {
+            canceledHandlerInvoked = true;
+            return ValueTask.FromCanceled(cancellation.Token);
+        });
+
+        var observed = await ExceptionCapture.CaptureAsync(() => AggregatingParallelPublisher.Instance
+            .PublishAsync([fail, canceled], new UnhandledNotification(), CancellationToken.None));
+
+        await Assert.That(canceledHandlerInvoked).IsTrue();
+        await Assert.That(ReferenceEquals(observed, failure)).IsTrue();
+    }
+
+    [Test]
     public async Task Notification_without_handlers_is_a_noop()
     {
         await using var provider = TestHost.Build();

@@ -17,7 +17,7 @@
 | 6 | `INotification` / `INotificationHandler<T>` | ✅ | `NotificationTests` |
 | 7 | `IPublisher.PublishAsync` | ✅ | `NotificationTests` |
 | 8 | 可替换 `INotificationPublisher` | ✅ | `NotificationTests.Publisher_type_takes_precedence_over_instance` |
-| 9 | 三种发布策略（顺序 / 并发 / 聚合并发） | ⬆️ | `NotificationTests`（顺序、并发、聚合异常） |
+| 9 | 三种发布策略（顺序 / 并发 / 聚合并发） | ⬆️ | `NotificationTests`（顺序、并发、首个故障通知其余处理器取消、聚合异常） |
 | 10 | 通知 Handler 去重（扫描期 + 运行期） | ✅ | `NotificationTests.Duplicate_handler_instances_are_deduplicated_at_runtime` |
 | 11 | `IStreamRequest<T>` / `IStreamRequestHandler<T,R>` | ✅ | `StreamTests` |
 | 12 | `IStreamPipelineBehavior<T,R>`（独立建链） | ✅ | `StreamTests.Stream_behaviors_wrap_each_item` |
@@ -31,7 +31,7 @@
 | 20 | `IRequestExceptionHandler` + `ExceptionOutcome<T>` 状态机 | ✅ | `ExceptionMappingTests` |
 | 21 | `IRequestExceptionAction` | ✅ | `ExceptionMappingTests` |
 | 22 | `ExceptionActionStrategy` 两值 | ✅ | `Actions_are_skipped_for_handled_exceptions_by_default` / `Actions_run_for_all_exceptions_when_configured` |
-| 23 | `CancellationToken` 全链透传 | ✅ | `StreamTests.Stream_stops_when_cancelled`、各处理器签名 |
+| 23 | `CancellationToken` 全链透传。聚合发布没有处理器故障且存在取消时，向调用方传播取消 | ✅ | `StreamTests.Stream_stops_when_cancelled`、`NotificationTests.Aggregating_publisher_propagates_cancellation_without_handler_failures` |
 
 ## 2. 配置面与注册语义
 
@@ -121,7 +121,7 @@
 
 | # | 检查 | 实现位置 |
 | --- | --- | --- |
-| 1 | 每个请求有且仅有一个 Handler | 扫描期 `DuplicateHandlerException` + 调度表构建 |
+| 1 | 同一个请求最多登记一个 Handler | 扫描期 `DuplicateHandlerException`，源生成诊断 `CDI002` |
 | 2 | 无重复 Handler | 同上 |
 | 3 | Lifetime 组合合法（Singleton 需审查） | `ValidateConfiguration` |
 | 4 | 开放 Behavior 类型参数可判定 | `OpenBehaviorCloser` + `CloseResult.Failed` |
@@ -129,3 +129,5 @@
 | 6 | Stream 与 Request Behavior 未混用 | `AddBehaviorCore` 类型检查 |
 | 7 | `INotificationPublisher` 唯一且可实现 | `ValidateConfiguration` |
 | 8 | 泛型护栏触发时 fail（`0` 禁用） | `RegistrationGuard` |
+
+请求找不到已登记的 Handler 时，首次调用 `SendAsync` 或 `StreamAsync` 会抛出 `HandlerNotFoundException`。源生成器在当前编译中发现请求声明而未找到对应 Handler 时，会报告 `CDI001` 警告。

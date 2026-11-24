@@ -7,32 +7,42 @@
 
 ## 5 分钟上手
 
+用 .NET 10 SDK 创建一个控制台项目。主包会带入契约包和源生成器，控制台示例还需要 Microsoft DI 容器的具体实现。
+
 ```bash
-dotnet add package HandlerR
-dotnet add package HandlerR.Contracts   # 契约项目可只引这个
+dotnet new console -n HandlerR.Quickstart -f net10.0
+cd HandlerR.Quickstart
+dotnet add package HandlerR --version 1.0.0
+dotnet add package Microsoft.Extensions.DependencyInjection --version 10.0.15
 ```
 
-```csharp
-// 1. 消息（契约层，零依赖）
-public sealed record GetOrderQuery(Guid OrderId) : IQuery<OrderDto>;
+将以下内容保存为 `Program.cs`。
 
-// 2. 处理器
+```csharp
+using HandlerR.Abstractions;
+using HandlerR.DependencyInjection;
+using Microsoft.Extensions.DependencyInjection;
+
+var services = new ServiceCollection();
+services.AddHandlerR(cfg => cfg.RegisterFromAssemblyContaining<GetOrderQueryHandler>());
+
+await using var provider = services.BuildServiceProvider(new ServiceProviderOptions { ValidateScopes = true });
+await using var scope = provider.CreateAsyncScope();
+var sender = scope.ServiceProvider.GetRequiredService<ISender>();
+var order = await sender.SendAsync(new GetOrderQuery(42));
+Console.WriteLine($"Order {order.OrderId}");
+
+public sealed record GetOrderQuery(int OrderId) : IQuery<OrderDto>;
+public sealed record OrderDto(int OrderId);
+
 public sealed class GetOrderQueryHandler : IRequestHandler<GetOrderQuery, OrderDto>
 {
     public ValueTask<OrderDto> HandleAsync(GetOrderQuery request, CancellationToken cancellationToken)
         => ValueTask.FromResult(new OrderDto(request.OrderId));
 }
-
-// 3. 注册
-services.AddHandlerR(cfg =>
-{
-    cfg.RegisterFromAssemblyContaining<GetOrderQuery>();
-    cfg.AddOpenBehavior(typeof(TelemetryBehavior<,>));   // 顺序 = 由外到内
-});
-
-// 4. 发送
-var dto = await dispatcher.SendAsync(new GetOrderQuery(orderId), cancellationToken);
 ```
+
+运行 `dotnet run`，输出 `Order 42`。
 
 ## 两条注册路径
 
@@ -42,6 +52,12 @@ var dto = await dispatcher.SendAsync(new GetOrderQuery(orderId), cancellationTok
 | **Mode B** | 增量源生成器在编译期产出调度表和处理器清单 | Native AOT / 冷启动敏感 | `services.AddGeneratedHandlerR()`（`using HandlerR.Generated;`） |
 
 在 JIT 宿主中，两种模式共用 `HandlerRDispatcher`、Behavior 管线和诊断。JIT 宿主可以在 `AddGeneratedHandlerR` 的配置回调中注册 Behavior。
+
+## 发布通知与读取流
+
+在同一个 DI 作用域解析 `IPublisher`，调用 `PublishAsync(notification)` 将通知交给已登记的处理器。使用 `ISender.StreamAsync(request)` 和 `await foreach` 消费流式响应。
+
+默认通知按顺序发布。JIT 宿主可以通过 `cfg.NotificationPublisherType` 选择 `ParallelPublisher` 或 `AggregatingParallelPublisher`。前者在首个处理器故障时请求其余处理器取消，等它们结束后抛出原故障。后者等待所有处理器，报告处理器故障。只有取消而无故障时，它会向调用方传播取消。
 
 ## 设计要点
 
@@ -90,10 +106,9 @@ services.AddGeneratedHandlerR();
 
 ## 文档
 
-- `README.md`（本文件）：5 分钟上手与设计要点
-- `FEATURES.md`：功能对标矩阵与已知差异
-- `DESIGN.md`：架构决策与实现边界
-- `HandlerR-类库技术方案.md`：完整技术方案（v3.1）
+- [仓库用法和可运行样例](https://github.com/sugarst/HandlerR)
+- [功能对标矩阵与已知差异](https://github.com/sugarst/HandlerR/blob/main/docs/FEATURES.md)
+- [架构决策与实现边界](https://github.com/sugarst/HandlerR/blob/main/docs/DESIGN.md)
 
 ## 许可
 

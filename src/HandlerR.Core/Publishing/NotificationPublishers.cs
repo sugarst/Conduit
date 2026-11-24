@@ -1,3 +1,4 @@
+using System.Runtime.ExceptionServices;
 using HandlerR.Abstractions;
 using HandlerR.Contracts;
 
@@ -29,7 +30,7 @@ public sealed class SequentialPublisher : INotificationPublisher
 }
 
 /// <summary>
-/// 并发发布：全部处理器同时启动，首个异常取消其余并向上抛出。
+/// 并发发布：首个处理器故障时请求其余处理器取消，等它们结束后抛出原故障。
 /// </summary>
 /// <remarks>
 /// 每个处理器在独立作用域内解析（由注册层内建），因此并发访问 Scoped 资源是安全的。
@@ -61,25 +62,43 @@ public sealed class ParallelPublisher : IConcurrentNotificationPublisher
 
         var tasks = new Task[handlers.Count];
         using var linked = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
+        Exception? firstFailure = null;
+        for (var i = 0; i < tasks.Length; i++)
+        {
+            tasks[i] = InvokeHandlerAsync(handlers[i]);
+        }
+
         try
         {
-            for (var i = 0; i < tasks.Length; i++)
-            {
-                tasks[i] = handlers[i].Handler(notification, linked.Token).AsTask();
-            }
-
             await Task.WhenAll(tasks).ConfigureAwait(false);
         }
-        catch
+        catch when (firstFailure is not null)
         {
-            await linked.CancelAsync().ConfigureAwait(false);
-            throw;
+            // 后续处理器或取消回调也可能失败，调用方应收到触发取消的原始故障。
+            ExceptionDispatchInfo.Throw(firstFailure);
+        }
+
+        async Task InvokeHandlerAsync(NotificationHandlerExecutor handler)
+        {
+            try
+            {
+                await handler.Handler(notification, linked.Token).ConfigureAwait(false);
+            }
+            catch (Exception failure) when (failure is not OperationCanceledException)
+            {
+                if (Interlocked.CompareExchange(ref firstFailure, failure, null) is null)
+                {
+                    await linked.CancelAsync().ConfigureAwait(false);
+                }
+
+                throw;
+            }
         }
     }
 }
 
 /// <summary>
-/// 聚合并发发布：等待全部处理器结束，聚合所有失败后抛出。
+/// 聚合并发发布：等待全部处理器结束，有故障时报告故障，否则传播取消。
 /// </summary>
 /// <remarks>适用于"尽量都执行、最后统一报告"的审计 / 扇出场景。</remarks>
 public sealed class AggregatingParallelPublisher : IConcurrentNotificationPublisher
@@ -105,38 +124,52 @@ public sealed class AggregatingParallelPublisher : IConcurrentNotificationPublis
         using var linked = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
         for (var i = 0; i < tasks.Length; i++)
         {
-            tasks[i] = handlers[i].Handler(notification, linked.Token).AsTask();
+            tasks[i] = InvokeHandlerAsync(handlers[i], notification, linked.Token);
         }
 
+        var all = Task.WhenAll(tasks);
         try
         {
-            await Task.WhenAll(tasks).ConfigureAwait(false);
+            await all.ConfigureAwait(false);
         }
-        catch
+        catch when (all.IsFaulted)
         {
-            // 全部失败已记录在 tasks 上，逐个收集后统一抛出
+            var failures = new List<Exception>();
+            foreach (var task in tasks)
+            {
+                if (task.Exception is { } exception)
+                {
+                    failures.AddRange(exception.InnerExceptions);
+                }
+            }
+
+            if (failures.Count == 1)
+            {
+                ExceptionDispatchInfo.Throw(failures[0]);
+            }
+
+            throw new AggregateException(
+                $"{failures.Count} notification handlers failed.", failures);
         }
 
-        var failures = new List<Exception>();
-        foreach (var task in tasks)
+        // 同步抛出的故障也计入任务结果，其他处理器仍会运行。
+        static Task InvokeHandlerAsync(
+            NotificationHandlerExecutor handler, INotification message, CancellationToken token)
         {
-            if (task.IsFaulted && task.Exception is not null)
+            try
             {
-                failures.AddRange(task.Exception.InnerExceptions);
+                return handler.Handler(message, token).AsTask();
+            }
+            catch (OperationCanceledException cancellation)
+            {
+                var canceled = new TaskCompletionSource();
+                canceled.SetCanceled(cancellation.CancellationToken);
+                return canceled.Task;
+            }
+            catch (Exception failure)
+            {
+                return Task.FromException(failure);
             }
         }
-
-        if (failures.Count == 0)
-        {
-            return;
-        }
-
-        if (failures.Count == 1)
-        {
-            throw failures[0];
-        }
-
-        throw new AggregateException(
-            $"{failures.Count} notification handlers failed.", failures);
     }
 }

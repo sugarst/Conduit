@@ -1,6 +1,6 @@
 # HandlerR.Contracts
 
-消息形状契约包：零依赖、单一日标框架 `net10.0`。
+为 .NET 10 共享项目提供零依赖的消息契约。
 
 ```
 IBaseRequest
@@ -25,10 +25,21 @@ HandlerR.Contracts  ←  HandlerR.Abstractions  ←  HandlerR.Core  ←  Handler
 ## 安装
 
 ```bash
-dotnet add package HandlerR.Contracts
+dotnet add package HandlerR.Contracts --version 1.0.0
 ```
 
-要求消费方项目同样面向 `net10.0`。
+在面向 `net10.0` 的共享类库里定义消息和响应 DTO。
+
+```csharp
+using HandlerR.Contracts;
+
+public sealed record GetProduct(string Sku) : IRequest<ProductDto>;
+public sealed record ProductDto(string Sku, decimal Price);
+public sealed record OrderPlaced(int OrderId) : INotification;
+public sealed record BrowseProducts(int Take) : IStreamRequest<ProductDto>;
+```
+
+宿主引用共享类库和 `HandlerR` 主包，在宿主或业务模块中实现这些消息的处理器，并向 DI 容器注册。主包会自动还原本契约包。 [主包使用说明](https://github.com/sugarst/HandlerR/blob/main/src/HandlerR/README.md)
 
 ## 许可
 

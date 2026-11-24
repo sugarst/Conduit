@@ -29,6 +29,8 @@
     <Authors>HandlerR Contributors</Authors>
     <Product>HandlerR</Product>
     <PackageLicenseExpression>Apache-2.0</PackageLicenseExpression>
+    <PackageProjectUrl>https://github.com/sugarst/HandlerR</PackageProjectUrl>
+    <RepositoryUrl>https://github.com/sugarst/HandlerR.git</RepositoryUrl>
     <RepositoryType>git</RepositoryType>
     <PackageRequireLicenseAcceptance>false</PackageRequireLicenseAcceptance>
     <PackageTags>mediator;cqrs;dispatcher;pipeline;source-generator;aot</PackageTags>
