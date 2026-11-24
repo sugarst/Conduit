@@ -15,7 +15,6 @@
   </ItemGroup>
 
   <ItemGroup>
-    <ProjectReference Include="../HandlerR.Abstractions/HandlerR.Abstractions.csproj" />
     <ProjectReference Include="../HandlerR.Core/HandlerR.Core.csproj" />
   </ItemGroup>
 

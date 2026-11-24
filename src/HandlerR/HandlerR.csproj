@@ -27,12 +27,10 @@
   </ItemGroup>
 
   <!--
-    PrivateAssets="all"：以下内部工程只用于本地编译与打包内容收集，
-    不作为 NuGet 依赖写入 nuspec（它们的 dll 已直接进 lib/net10.0）。
+    通过 DI 项目传递解析 Core 和 Abstractions，三者的 DLL 一起打进 lib/net10.0。
+    PrivateAssets="all" 避免将 DI 项目声明为 NuGet 依赖。
   -->
   <ItemGroup>
-    <ProjectReference Include="../HandlerR.Abstractions/HandlerR.Abstractions.csproj" PrivateAssets="all" />
-    <ProjectReference Include="../HandlerR.Core/HandlerR.Core.csproj" PrivateAssets="all" />
     <ProjectReference Include="../HandlerR.DependencyInjection/HandlerR.DependencyInjection.csproj" PrivateAssets="all" />
   </ItemGroup>
 

@@ -13,10 +13,8 @@
     <None Include="README.md" Pack="true" PackagePath="/" />
   </ItemGroup>
 
-  <!-- 编译期需要内核心类型 -->
+  <!-- 本地编译通过 DI 项目传递解析 Core 和 Abstractions。 -->
   <ItemGroup>
-    <ProjectReference Include="../HandlerR.Abstractions/HandlerR.Abstractions.csproj" PrivateAssets="all" />
-    <ProjectReference Include="../HandlerR.Core/HandlerR.Core.csproj" PrivateAssets="all" />
     <ProjectReference Include="../HandlerR.DependencyInjection/HandlerR.DependencyInjection.csproj" PrivateAssets="all" />
   </ItemGroup>
 
