@@ -6,6 +6,7 @@
     <Project Path="samples/HandlerR.Samples/HandlerR.Samples.csproj" />
   </Folder>
   <Folder Name="/src/">
+    <Project Path="src/HandlerR/HandlerR.csproj" />
     <Project Path="src/HandlerR.Abstractions/HandlerR.Abstractions.csproj" />
     <Project Path="src/HandlerR.Contracts/HandlerR.Contracts.csproj" />
     <Project Path="src/HandlerR.Core/HandlerR.Core.csproj" />
