@@ -5,6 +5,8 @@
 > **Independent implementation. Not affiliated with or derived from MediatR.**
 > 独立实现，Apache-2.0 许可。技术方案见 [`docs/HandlerR-类库技术方案.md`](./docs/HandlerR-类库技术方案.md)（v3.1）。
 
+版本记录见 [更新日志](./docs/CHANGELOG.md)。
+
 ## 这是什么
 
 一个面向 .NET 10 的进程内消息调度库：请求 / 响应、通知多播、流式请求、Pipeline Behavior 责任链、

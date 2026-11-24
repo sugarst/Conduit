@@ -39,5 +39,5 @@
 
 ### 已知差异
 
-见 [`docs/FEATURES.md`](./docs/FEATURES.md) 第 5 节：无许可校验机制、无跨目标资产、无非泛型 `SendAsync(IRequest)` 重载、
+见 [`FEATURES.md`](./FEATURES.md) 第 5 节：无许可校验机制、无跨目标资产、无非泛型 `SendAsync(IRequest)` 重载、
 `CDI001` 为 Warning。
