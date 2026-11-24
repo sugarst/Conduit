@@ -1,3 +1,5 @@
+<img src="./assets/branding/handlerr-logo.svg" alt="HandlerR" width="340">
+
 # HandlerR — 进程内消息调度库
 
 > **Independent implementation. Not affiliated with or derived from MediatR.**

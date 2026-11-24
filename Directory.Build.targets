@@ -1,5 +1,15 @@
 <Project>
 
+  <PropertyGroup Condition="'$(IsPackable)' == 'true'">
+    <PackageIcon>handlerr-icon.png</PackageIcon>
+  </PropertyGroup>
+
+  <ItemGroup Condition="'$(IsPackable)' == 'true'">
+    <None Include="$(MSBuildThisFileDirectory)assets/branding/handlerr-icon.png"
+          Pack="true"
+          PackagePath="/" />
+  </ItemGroup>
+
   <!--
     AOT / 裁剪工具链版本对齐。
 
